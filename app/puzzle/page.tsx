@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react'
 import { supabase } from '@/src/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { RotateCcw } from 'lucide-react'
+import Image from 'next/image'
 
 type Puzzle = {
   grid: string[][]
@@ -61,7 +62,12 @@ export default function HomePage() {
     supabase.auth.getSession().then(({ data }) => {
       setUser(data.session?.user ?? null)
     })
-  
+    useEffect(() => {
+      if (typeof window === 'undefined') return
+    
+      const img = document.createElement('img')
+      img.src = '/chicken.png'
+    }, [])
     // Listen for login/logout changes
     const { data: listener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
@@ -810,12 +816,13 @@ return null
   <div className="fixed inset-0 z-50 overflow-hidden">
 
     {/* Chicken Fullscreen */}
-    <img
-      src="/chicken.png"
-      alt="chicken"
-      className={`absolute inset-0 w-full h-full object-cover 
-        ${startWipe ? 'animate-wipe-out' : ''}`}
-    />
+    <Image
+  src="/chicken.png"
+  alt="chicken"
+  fill
+  priority
+  className={`object-cover ${startWipe ? 'animate-wipe-out' : ''}`}
+/>
 
   </div>
 )}
