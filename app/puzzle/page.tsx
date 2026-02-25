@@ -1,6 +1,4 @@
 'use client'
-console.log("ENV URL:", process.env.NEXT_PUBLIC_SUPABASE_URL)
-console.log("ENV KEY:", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
 
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '@/src/lib/supabase'
@@ -58,17 +56,10 @@ export default function HomePage() {
   const inputs = useRef<(HTMLInputElement | null)[][]>([])
 
   useEffect(() => {
-    // Get current session
     supabase.auth.getSession().then(({ data }) => {
       setUser(data.session?.user ?? null)
     })
-    useEffect(() => {
-      if (typeof window === 'undefined') return
-    
-      const img = document.createElement('img')
-      img.src = '/chicken.png'
-    }, [])
-    // Listen for login/logout changes
+  
     const { data: listener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setUser(session?.user ?? null)
@@ -81,12 +72,19 @@ export default function HomePage() {
   }, [])
 
   useEffect(() => {
+    if (typeof window === 'undefined') return
+  
+    const img = document.createElement('img')
+    img.src = '/chicken.png'
+  }, [])
+
+  useEffect(() => {
     setShowChickenSplash(false)
     setStartWipe(false)
   }, [])
 
   useEffect(() => {
-    if (!user || !puzzle) return
+    if (!user) return
   
     async function loadUsername() {
       const { data } = await supabase
