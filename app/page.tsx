@@ -116,6 +116,8 @@ export default function HomePage() {
   useEffect(() => {
     if (!user || !puzzle) return
   
+    const currentPuzzle = puzzle
+  
     async function checkExistingSolve() {
       const today = new Date().toISOString().split('T')[0]
   
@@ -126,14 +128,14 @@ export default function HomePage() {
         .eq('puzzle_date', today)
         .maybeSingle()
   
-      if (data) {
+      if (data && currentPuzzle) {
         setSeconds(data.solve_time)
         setIsComplete(true)
         setTimerRunning(false)
   
-        // 🔥 IMPORTANT: restore solved grid
+        // Restore solved grid safely
         setUserGrid(
-          puzzle.grid.map(row =>
+          currentPuzzle.grid.map(row =>
             row.map(c => (c === '#' ? '#' : c))
           )
         )
@@ -510,9 +512,14 @@ return null
         }, 300)
     
         setTimeout(() => {
-          setShowChickenSplash(false)  // remove chicken
+          if (!puzzle) return
+        
+          setShowChickenSplash(false)
+        
+          const author = encodeURIComponent(puzzle.author)
+        
           router.push(
-            `/completion?time=${seconds}&author=${encodeURIComponent(puzzle.author)}`
+            `/completion?time=${seconds}&author=${author}`
           )
         }, 1500)
     
