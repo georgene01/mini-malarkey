@@ -197,7 +197,7 @@ if (incoming.length > 0) {
     <div className="max-w-xl mx-auto mt-20 font-serif text-neutral-900">
 
       <button
-        onClick={() => router.push('/')}
+        onClick={() => router.push('/puzzle')}
         className="mb-4 text-sm underline"
       >
         ← Back to Puzzle

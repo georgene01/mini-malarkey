@@ -15,7 +15,7 @@ export default function LoginPage() {
       password
     })
 
-    if (!error) router.push('/')
+    if (!error) router.push('/puzzle')
     else alert(error.message)
   }
 
@@ -96,8 +96,8 @@ export default function LoginPage() {
         </div>
   
         <div className="text-center pt-4">
-          <button
-            onClick={() => router.push('/')}
+        <button
+  onClick={() => router.push('/puzzle')}
             className="text-sm text-neutral-600 hover:text-red-800 transition"
           >
             Continue as Guest

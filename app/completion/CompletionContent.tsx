@@ -78,7 +78,7 @@ export default function CompletionContent() {
           </button>
 
           <button
-            onClick={() => router.push('/')}
+            onClick={() => router.push('/puzzle')}
             className="w-full border border-neutral-900 py-3 text-sm uppercase tracking-wide hover:bg-neutral-100 transition"
           >
             Return to Puzzle
