@@ -660,11 +660,12 @@ const activeClueText =
       function renderGrid() {
         return (
           <div
-          className="grid gap-1 w-[92vw] max-w-[420px]"
-            style={{
-              gridTemplateColumns: `repeat(${cols}, 1fr)`
-            }}
-          >
+  className="grid gap-1 w-[92vw] max-w-[420px] md:w-auto"
+  style={{
+    gridTemplateColumns: `repeat(${cols}, 1fr)`,
+    maxHeight: isMobile ? '60vh' : undefined
+  }}
+>
             {puzzle!.grid.map((row, r) =>
               row.map((cell, c) => {
                 const inWord = activeWord.some(
@@ -720,8 +721,8 @@ const activeClueText =
         )
       }
   return (
-    <main className="min-h-screen md:min-h-0 p-4 md:p-6 flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8 bg-white">
-      <section className="pb-24 md:pb-0 w-full flex flex-col items-center">
+    <main className="min-h-screen md:min-h-0 flex flex-col md:flex-row bg-white">
+      <section className="w-full flex flex-col items-center md:items-start px-4 md:px-0 pt-4 md:pt-0 pb-24 md:pb-0 min-h-screen md:min-h-0 overflow-x-hidden">
       <div className="flex justify-between items-start mb-6 md:mb-10">
 
 {/* Left side */}
@@ -876,7 +877,7 @@ const activeClueText =
       </aside>
       {/* MOBILE FIXED CLUE BAR */}
 {isMobile && (
-  <div className="fixed bottom-0 left-0 right-0 bg-white border-t px-4 py-3 md:hidden z-40 shadow-lg">
+  <div className="fixed bottom-0 left-0 right-0 bg-white border-t px-4 py-3 md:hidden z-40 shadow-lg safe-area-bottom">
 
     <div className="flex items-center justify-between">
 
@@ -895,10 +896,10 @@ const activeClueText =
           )
         }
       >
-        <div className="text-xs uppercase tracking-widest text-neutral-500">
+        <div className="text-[10px] uppercase tracking-[0.2em] text-neutral-400 mb-1">
           {direction.toUpperCase()}
         </div>
-        <div className="font-medium text-sm">
+        <div className="font-medium text-[15px] leading-tight">
           {activeClueNumber}. {activeClueText}
         </div>
       </div>
