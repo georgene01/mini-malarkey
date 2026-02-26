@@ -64,3 +64,8 @@ body {
 .animate-wipe-out {
   animation: wipeOut 1s ease-in-out forwards;
 }
+@media (max-width: 768px) {
+  html, body {
+    overflow-x: hidden;
+  }
+}
