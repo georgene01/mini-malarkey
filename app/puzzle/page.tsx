@@ -612,7 +612,7 @@ return null
       .padStart(2, '0')}`
 
   return (
-    <main className="p-6 flex gap-8">
+    <main className="p-4 md:p-6 flex flex-col md:flex-row gap-6 md:gap-8">
       <section>
       <div className="flex justify-between items-start mb-10">
 
@@ -689,12 +689,59 @@ return null
   </div>
 )}
         </div>
+{/* MOBILE CLUE CONTROLS */}
+<div className="md:hidden mt-6 flex items-center justify-between border-t pt-4">
 
+  {/* Previous Clue */}
+  <button
+    onClick={() => {
+      const prev = getPreviousClueEnd(
+        userGrid,
+        getWordStart(active, direction),
+        direction
+      )
+      if (prev) setActive(prev)
+    }}
+    className="px-4 py-2 border rounded text-sm"
+  >
+    ← Prev
+  </button>
+
+  {/* Toggle Direction */}
+  <button
+    onClick={() =>
+      setDirection(d => (d === 'across' ? 'down' : 'across'))
+    }
+    className="px-6 py-2 border rounded text-sm font-semibold"
+  >
+    {direction.toUpperCase()}
+  </button>
+
+  {/* Next Clue */}
+  <button
+    onClick={() => {
+      const jump = getNextClueStart(
+        userGrid,
+        getWordStart(active, direction),
+        direction
+      )
+      if (jump) {
+        setDirection(jump.newDir)
+        setActive(jump.pos)
+      }
+    }}
+    className="px-4 py-2 border rounded text-sm"
+  >
+    Next →
+  </button>
+
+</div>
         <div
           className="grid gap-1"
           style={{
             gridTemplateColumns: `repeat(${cols}, 1fr)`,
-            width: `${Math.min(cols * 60, 420)}px`
+            maxWidth: '100%',
+            width: '100%'
           }}
         >
           {puzzle.grid.map((row, r) =>
@@ -736,7 +783,7 @@ return null
                         setActive({ row: r, col: c })
                       }
                       maxLength={1}
-                      className="w-full h-full text-center text-xl font-bold tracking-wide uppercase outline-none bg-transparent"
+                      className="w-full h-full text-center text-lg md:text-xl font-bold tracking-wide uppercase outline-none bg-transparent"
                     />
                   )}
                 </div>
@@ -746,7 +793,7 @@ return null
         </div>
       </section>
 
-      <aside className="w-80">
+      <aside className="w-full md:w-80 mt-6 md:mt-0">
       <h2 className="text-lg font-bold uppercase tracking-wider mb-4 text-neutral-900">
   Across
 </h2>
@@ -766,8 +813,15 @@ return null
                     : 'text-neutral-700'
                 }`}
                 onClick={() => {
-                  setDirection('across')
-                  setActive(start)
+                  if (
+                    activeClueNumber === Number(num) &&
+                    direction === 'across'
+                  ) {
+                    setDirection('down')
+                  } else {
+                    setDirection('across')
+                    setActive(start)
+                  }
                 }}
               >
                 {num}. {clue}
@@ -793,8 +847,15 @@ return null
                   isActive ? 'font-bold underline' : ''
                 }`}
                 onClick={() => {
-                  setDirection('down')
-                  setActive(start)
+                  if (
+                    activeClueNumber === Number(num) &&
+                    direction === 'down'
+                  ) {
+                    setDirection('across')
+                  } else {
+                    setDirection('down')
+                    setActive(start)
+                  }
                 }}
               >
                 {num}. {clue}
@@ -829,7 +890,7 @@ return null
   </button>
 </div>
 {showCompletionOverlay && (
-  <div className="fixed inset-0 bg-white z-50 flex items-center justify-center">
+  <div className="fixed inset-0 bg-white z-50 flex items-center justify-center p-6 text-center">
     <div className="text-center space-y-6">
     <h1 className="text-3xl font-bold tracking-tight">
   Puzzle Completed !
