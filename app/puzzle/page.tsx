@@ -660,7 +660,7 @@ const activeClueText =
       function renderGrid() {
         return (
           <div
-            className="grid gap-1 w-full max-w-[420px] mx-auto"
+          className="grid gap-1 mx-auto w-[90vw] max-w-[420px]"
             style={{
               gridTemplateColumns: `repeat(${cols}, 1fr)`
             }}
@@ -709,7 +709,7 @@ const activeClueText =
                           }
                         }}
                         maxLength={1}
-                        className="w-full h-full text-center text-xl font-bold tracking-wide uppercase outline-none bg-transparent"
+                        className="w-full h-full text-center text-2xl md:text-xl font-bold tracking-wide uppercase outline-none bg-transparent"
                       />
                     )}
                   </div>
@@ -720,8 +720,8 @@ const activeClueText =
         )
       }
   return (
-    <main className="p-4 md:p-6 flex flex-col md:flex-row gap-6 md:gap-8">
-      <section>
+    <main className="p-4 md:p-6 flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8">
+      <section className="pb-24 md:pb-0">
       <div className="flex justify-between items-start mb-10">
 
 {/* Left side */}
@@ -797,49 +797,7 @@ const activeClueText =
   </div>
 )}
         </div>
-{/* MOBILE CLUE CONTROLS */}
-{isMobile && (
-  <div className="md:hidden mt-6 border-t pt-4">
 
-    {/* Clue Bar */}
-    <div className="flex items-center justify-between">
-
-      {/* Prev */}
-      <button
-        onClick={() => goToClueByIndex(activeClueIndex - 1)}
-        className="px-4 py-2 text-lg"
-      >
-        ←
-      </button>
-
-      {/* Clue Display */}
-      <div
-        className="text-center flex-1 px-4 cursor-pointer"
-        onClick={() =>
-          setDirection(d =>
-            d === 'across' ? 'down' : 'across'
-          )
-        }
-      >
-        <div className="text-xs uppercase tracking-widest text-neutral-500">
-          {direction.toUpperCase()}
-        </div>
-        <div className="font-medium">
-          {activeClueNumber}. {activeClueText}
-        </div>
-      </div>
-
-      {/* Next */}
-      <button
-        onClick={() => goToClueByIndex(activeClueIndex + 1)}
-        className="px-4 py-2 text-lg"
-      >
-        →
-      </button>
-
-    </div>
-  </div>
-)}
 
 {renderGrid()}
       </section>
@@ -916,6 +874,46 @@ const activeClueText =
           }
         )}
       </aside>
+      {/* MOBILE FIXED CLUE BAR */}
+{isMobile && (
+  <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 md:hidden z-40">
+
+    <div className="flex items-center justify-between">
+
+      <button
+        onClick={() => goToClueByIndex(activeClueIndex - 1)}
+        className="px-4 text-xl"
+      >
+        ←
+      </button>
+
+      <div
+        className="flex-1 text-center px-3 cursor-pointer"
+        onClick={() =>
+          setDirection(d =>
+            d === 'across' ? 'down' : 'across'
+          )
+        }
+      >
+        <div className="text-xs uppercase tracking-widest text-neutral-500">
+          {direction.toUpperCase()}
+        </div>
+        <div className="font-medium text-sm">
+          {activeClueNumber}. {activeClueText}
+        </div>
+      </div>
+
+      <button
+        onClick={() => goToClueByIndex(activeClueIndex + 1)}
+        className="px-4 text-xl"
+      >
+        →
+      </button>
+
+    </div>
+
+  </div>
+)}
       {showChickenSplash && (
   <div className="fixed inset-0 z-50 overflow-hidden">
 
