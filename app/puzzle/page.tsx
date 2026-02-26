@@ -685,11 +685,29 @@ const activeClueText =
     : ''
 
     function goToClueByIndex(index: number) {
-      if (index < 0 || index >= activeClueList.length) return
+      let newDirection = direction
+      let clueList = activeClueList
     
-      const clue = activeClueList[index]
+      // 🔁 Wrap backward
+      if (index < 0) {
+        newDirection = direction === 'across' ? 'down' : 'across'
+        clueList =
+          newDirection === 'across' ? acrossClues : downClues
+        index = clueList.length - 1
+      }
+    
+      // 🔁 Wrap forward
+      if (index >= clueList.length) {
+        newDirection = direction === 'across' ? 'down' : 'across'
+        clueList =
+          newDirection === 'across' ? acrossClues : downClues
+        index = 0
+      }
+    
+      const clue = clueList[index]
       const start = findStart(clue.num, numbers)
     
+      setDirection(newDirection)
       setActive(start)
     }
 
@@ -820,7 +838,13 @@ if (isMobile) {
 
 </div>
 </div>
-
+{almostMessage && (
+  <div className="px-4 mt-2">
+    <div className="text-xs text-red-700 bg-red-50 border border-red-200 px-3 py-2 rounded-md text-center">
+      Almost there — something isn’t quite right.
+    </div>
+  </div>
+)}
       {/* Grid */}
       <div className="flex-1 flex items-center justify-center px-4">
         <div
