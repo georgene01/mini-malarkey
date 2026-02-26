@@ -514,12 +514,12 @@ return null
     
         setTimeout(() => {
           setStartWipe(true)
-        }, 500)
+        }, 300)
     
         setTimeout(() => {
           setShowChickenSplash(false)
           setShowCompletionOverlay(true)
-        }, 1500)
+        }, 2000)
     
       } else {
         setAlmostMessage(
