@@ -118,6 +118,10 @@ export default function HomePage() {
   }, [user])
 
   useEffect(() => {
+    setShowChickenSplash(true)
+  }, [])
+  
+  useEffect(() => {
     if (!user || !puzzle) return
   
     const currentPuzzle = puzzle
@@ -513,7 +517,7 @@ return null
     
         setTimeout(() => {
           setStartWipe(true)
-        }, 300)
+        }, 500)
     
         setTimeout(() => {
           if (!puzzle) return
@@ -525,7 +529,7 @@ return null
           router.push(
             `/completion?time=${seconds}&author=${author}`
           )
-        }, 1500)
+        }, 2500)
     
       } else {
         setAlmostMessage(
