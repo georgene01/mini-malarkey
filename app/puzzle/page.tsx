@@ -554,7 +554,9 @@ if (jump) {
 
 
     function handleMobileKey(letter: string) {
-      handleChange(active.row, active.col, letter)
+      requestAnimationFrame(() => {
+  handleChange(active.row, active.col, letter)
+})
     }
     
 
@@ -800,7 +802,21 @@ const activeClueText =
           </div>
         )
       }
-
+      if (showChickenSplash) {
+        return (
+          <div className="fixed inset-0 z-[90] overflow-hidden">
+            <Image
+              src="/chicken.png"
+              alt="chicken"
+              fill
+              priority
+              className={`object-cover ${
+                startWipe ? 'animate-wipe-out' : ''
+              }`}
+            />
+          </div>
+        )
+      }
       if (showCompletionOverlay) {
         return (
           <div className="fixed inset-0 bg-white z-[100] flex items-center justify-center p-6 text-center">
@@ -885,9 +901,9 @@ if (isMobile) {
   </div>
 )}
       {/* Grid */}
-      <div className="flex-1 flex items-center justify-center px-4">
+      <div className="flex-1 flex items-start justify-center px-4 pt-2">
         <div
-          className="grid gap-1 w-full max-w-[400px]"
+          className="grid gap-1 w-full max-w-[92vw]"
           style={{
             gridTemplateColumns: `repeat(${cols}, 1fr)`
           }}
@@ -978,62 +994,66 @@ if (isMobile) {
 
 </div>
 
-      {/* Keyboard */}
-<div className="bg-neutral-200 px-2 py-3">
 
-{/* Row 1 */}
-<div className="flex justify-center gap-1 mb-2">
-  {"QWERTYUIOP".split("").map(letter => (
-    <button
-      key={letter}
-      onClick={() =>
-        handleChange(active.row, active.col, letter)
-      }
-      className="bg-white rounded-md w-9 h-12 text-lg font-medium active:bg-neutral-300"
+{/* Keyboard */}
+<div className="bg-neutral-200 px-2 py-3 select-none">
+
+  {["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"].map((row, i) => (
+    <div
+      key={i}
+      className="flex gap-1 mb-2"
     >
-      {letter}
-    </button>
+      {row.split("").map(letter => (
+        <button
+          key={letter}
+          onClick={() =>
+            requestAnimationFrame(() =>
+              handleChange(active.row, active.col, letter)
+            )
+          }
+          style={{ touchAction: 'manipulation' }}
+          className="
+            bg-white
+            rounded-lg
+            flex-1
+            py-3
+            text-lg
+            font-medium
+            shadow-sm
+            transition
+            duration-75
+            active:scale-95
+            active:bg-neutral-300
+          "
+        >
+          {letter}
+        </button>
+      ))}
+
+      {/* Add backspace to last row only */}
+      {i === 2 && (
+        <button
+          onClick={handleMobileBackspace}
+          style={{ touchAction: 'manipulation' }}
+          className="
+            bg-neutral-400
+            rounded-lg
+            px-4
+            py-3
+            text-lg
+            font-medium
+            shadow-sm
+            transition
+            duration-75
+            active:scale-95
+            active:bg-neutral-500
+          "
+        >
+          ⌫
+        </button>
+      )}
+    </div>
   ))}
-</div>
-
-{/* Row 2 */}
-<div className="flex justify-center gap-1 mb-2">
-  {"ASDFGHJKL".split("").map(letter => (
-    <button
-      key={letter}
-      onClick={() =>
-        handleChange(active.row, active.col, letter)
-      }
-      className="bg-white rounded-md w-9 h-12 text-lg font-medium active:bg-neutral-300"
-    >
-      {letter}
-    </button>
-  ))}
-</div>
-
-{/* Row 3 */}
-<div className="flex justify-center gap-1">
-
-  {"ZXCVBNM".split("").map(letter => (
-    <button
-      key={letter}
-      onClick={() =>
-        handleChange(active.row, active.col, letter)
-      }
-      className="bg-white rounded-md w-9 h-12 text-lg font-medium active:bg-neutral-300"
-    >
-      {letter}
-    </button>
-  ))}
-
-  <button
-    onClick={handleMobileBackspace}
-    className="bg-neutral-400 rounded-md w-16 h-12 text-lg active:bg-neutral-500"
-  >
-    ⌫
-  </button>
-
-</div>
 
 </div>
 
@@ -1213,20 +1233,7 @@ if (isMobile) {
       </aside>
       {/* MOBILE FIXED CLUE BAR */}
       
-      {showChickenSplash && (
-  <div className="fixed inset-0 z-50 overflow-hidden">
-
-    {/* Chicken Fullscreen */}
-    <Image
-  src="/chicken.png"
-  alt="chicken"
-  fill
-  priority
-  className={`object-cover ${startWipe ? 'animate-wipe-out' : ''}`}
-/>
-
-  </div>
-)}
+      
 
 
 {/* Floating Leaderboard Button */}
