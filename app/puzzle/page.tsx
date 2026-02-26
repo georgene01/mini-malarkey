@@ -261,12 +261,25 @@ export default function HomePage() {
   
     const idx = clueList.findIndex(c => c.num === currentNumber)
   
-    if (idx <= 0) return null
+    if (idx > 0) {
+      const prevStart = clueList[idx - 1].pos
+      const cells = getWordCells(prevStart, dir)
+      return cells[cells.length - 1]
+    }
+    
+    // 🔁 Wrap to opposite direction LAST clue
+    const opposite: Direction =
+      dir === 'across' ? 'down' : 'across'
+    
+    const oppositeList = collectClues(opposite)
+    
+    if (!oppositeList.length) return null
+    
+    const lastOpposite = oppositeList[oppositeList.length - 1]
+    const cells = getWordCells(lastOpposite.pos, opposite)
+    
+    return cells[cells.length - 1]
   
-    const prevStart = clueList[idx - 1].pos
-    const cells = getWordCells(prevStart, dir)
-  
-    return cells[cells.length - 1] // last cell of previous clue
   }
 
   const getWordCells = (start: Pos, dir: Direction) => {
@@ -402,15 +415,15 @@ for (const clue of oppositeList) {
 // If no clues in opposite direction have empties,
 // scan entire grid for next empty square
 
-for (let r = 0; r < rows; r++) {
-  for (let c = 0; c < cols; c++) {
-    if (puzzle.grid[r][c] !== '#' && !grid[r][c]) {
-      return {
-        pos: { row: r, col: c },
-        newDir: opposite
-      }
-    }
-  }
+// 🔁 If all opposite clues are filled,
+// wrap to FIRST opposite clue (true circular behavior)
+
+const firstOpposite = oppositeList[0]
+const cells = getWordCells(firstOpposite.pos, opposite)
+
+return {
+  pos: cells[0],
+  newDir: opposite
 }
 
 // Nothing empty anywhere
@@ -612,8 +625,17 @@ if (jump) {
       if (e.key === 'ArrowDown') row++
       if (e.key === 'ArrowUp') row--
 
-      if (!isBlack(row, col))
+      if (!isBlack(row, col)) {
         setActive({ row, col })
+      } else {
+        // wrap to next clue
+        const currentWordStart = getWordStart(active, direction)
+        const jump = getNextClueStart(userGrid, currentWordStart, direction)
+        if (jump) {
+          setActive(jump.pos)
+          if (jump.newDir) setDirection(jump.newDir)
+        }
+      }
     }
   }
 
