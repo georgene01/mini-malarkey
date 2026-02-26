@@ -117,10 +117,7 @@ export default function HomePage() {
     checkProfile()
   }, [user])
 
-  useEffect(() => {
-    setShowChickenSplash(true)
-  }, [])
-  
+
   useEffect(() => {
     if (!user || !puzzle) return
   
