@@ -514,7 +514,7 @@ return null
     
         setTimeout(() => {
           setStartWipe(true)
-        }, 300)
+        }, 500)
     
         setTimeout(() => {
           setShowChickenSplash(false)
