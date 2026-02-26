@@ -534,6 +534,20 @@ return null
     
     }}
 
+
+    function handleMobileKey(letter: string) {
+      handleChange(active.row, active.col, letter)
+    }
+    
+
+    function handleMobileBackspace() {
+      const fakeEvent = {
+        key: 'Backspace',
+        preventDefault: () => {}
+      } as any
+    
+      handleKeyDown(fakeEvent, active.row, active.col)
+    }
   function handleKeyDown(e: React.KeyboardEvent, r: number, c: number) {
     if (isComplete) return
 
@@ -682,54 +696,57 @@ const activeClueText =
                     className={`relative aspect-square border border-neutral-400 ${bg}`}
                   >
                     {cell !== '#' && (
-                      <input
-                        disabled={isComplete && !isReplayMode}
-                        ref={el => {
-                          inputs.current[r][c] = el
-                        }}
-                        value={userGrid[r][c]}
-                        onChange={e =>
-                          handleChange(r, c, e.target.value)
-                        }
-                        onKeyDown={e =>
-                          handleKeyDown(e, r, c)
-                        }
-                        onFocus={() => {
-                          setActive({ row: r, col: c })
-                        }}
-                        onClick={() => {
-                          const isSameCell =
-                            active.row === r && active.col === c
-                        
-                          const { across, down } =
-                            getAvailableDirections(r, c, puzzle!)
-                        
-                          // Only across possible
-                          if (across && !down) {
-                            setDirection('across')
-                          }
-                        
-                          // Only down possible
-                          else if (!across && down) {
-                            setDirection('down')
-                          }
-                        
-                          // Both possible
-                          else if (across && down) {
-                            if (isSameCell) {
-                              setDirection(d =>
-                                d === 'across' ? 'down' : 'across'
-                              )
-                            }
-                            // If different cell, keep current direction
-                          }
-                        
-                          setActive({ row: r, col: c })
-                        }}
-                        maxLength={1}
-                        className="w-full h-full text-center text-2xl md:text-xl font-bold tracking-wide uppercase outline-none bg-transparent"
-                      />
-                    )}
+  isMobile ? (
+    <div
+      onClick={() => {
+        setActive({ row: r, col: c })
+      }}
+      className="w-full h-full flex items-center justify-center text-2xl font-bold"
+    >
+      {userGrid[r][c]}
+    </div>
+  ) : (
+    <input
+      disabled={isComplete && !isReplayMode}
+      ref={el => {
+        inputs.current[r][c] = el
+      }}
+      value={userGrid[r][c]}
+      onChange={e =>
+        handleChange(r, c, e.target.value)
+      }
+      onKeyDown={e =>
+        handleKeyDown(e, r, c)
+      }
+      onFocus={() => {
+        setActive({ row: r, col: c })
+      }}
+      onClick={() => {
+        const isSameCell =
+          active.row === r && active.col === c
+
+        const { across, down } =
+          getAvailableDirections(r, c, puzzle!)
+
+        if (across && !down) {
+          setDirection('across')
+        } else if (!across && down) {
+          setDirection('down')
+        } else if (across && down) {
+          if (isSameCell) {
+            setDirection(d =>
+              d === 'across' ? 'down' : 'across'
+            )
+          }
+        }
+
+        setActive({ row: r, col: c })
+      }}
+      maxLength={1}
+      className="w-full h-full text-center text-2xl md:text-xl font-bold tracking-wide uppercase outline-none bg-transparent"
+    />
+  )
+)}
                   </div>
                 )
               })
@@ -739,7 +756,7 @@ const activeClueText =
       }
   return (
     <main className="h-screen md:min-h-screen flex flex-col md:flex-row bg-white overflow-hidden">
-      <section className="w-full flex flex-col items-center md:items-start px-4 md:px-0 pt-4 md:pt-0 flex-1 overflow-hidden">
+      <section className="w-full flex flex-col items-center md:items-start px-4 md:px-0 pt-4 md:pt-0 flex-1 pb-[220px] md:pb-0 overflow-hidden">
       <div className="w-full md:max-w-4xl md:mx-auto">
       <div className="flex justify-between items-start mb-4 md:mb-10">
 
@@ -898,41 +915,37 @@ const activeClueText =
         )}
       </aside>
       {/* MOBILE FIXED CLUE BAR */}
-{isMobile && (
-  <div className="fixed bottom-0 left-0 right-0 bg-white border-t px-4 py-3 md:hidden z-40">
+      {isMobile && (
+  <div className="fixed bottom-0 left-0 right-0 bg-neutral-100 border-t z-50">
 
-    <div className="flex items-center justify-between">
-
-      <button
-        onClick={() => goToClueByIndex(activeClueIndex - 1)}
-        className="px-4 text-xl"
-      >
-        ←
-      </button>
-
-      <div
-        className="flex-1 text-center px-3 cursor-pointer"
-        onClick={() =>
-          setDirection(d =>
-            d === 'across' ? 'down' : 'across'
-          )
-        }
-      >
-        <div className="text-[10px] uppercase tracking-[0.2em] text-neutral-400 mb-1">
-          {direction.toUpperCase()}
-        </div>
-        <div className="font-medium text-[15px] leading-tight">
-          {activeClueNumber}. {activeClueText}
-        </div>
+    {/* Clue Bar */}
+    <div className="px-4 py-2 border-b bg-white text-center">
+      <div className="text-xs uppercase tracking-wide text-neutral-500">
+        {direction}
       </div>
+      <div className="font-medium">
+        {activeClueNumber}. {activeClueText}
+      </div>
+    </div>
+
+    {/* Keyboard */}
+    <div className="grid grid-cols-10 gap-1 p-2">
+      {"QWERTYUIOPASDFGHJKLZXCVBNM".split("").map(letter => (
+        <button
+          key={letter}
+          onClick={() => handleMobileKey(letter)}
+          className="bg-white border rounded py-2 text-lg font-medium"
+        >
+          {letter}
+        </button>
+      ))}
 
       <button
-        onClick={() => goToClueByIndex(activeClueIndex + 1)}
-        className="px-4 text-xl"
+        onClick={handleMobileBackspace}
+        className="col-span-2 bg-neutral-200 border rounded py-2"
       >
-        →
+        ⌫
       </button>
-
     </div>
 
   </div>
