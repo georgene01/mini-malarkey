@@ -517,16 +517,9 @@ return null
         }, 300)
     
         setTimeout(() => {
-          if (!puzzle) return
-        
           setShowChickenSplash(false)
-        
-          const author = encodeURIComponent(puzzle.author)
-        
-          router.push(
-            `/completion?time=${seconds}&author=${author}`
-          )
-        }, 2500)
+          setShowCompletionOverlay(true)
+        }, 1500)
     
       } else {
         setAlmostMessage(
