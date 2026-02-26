@@ -660,7 +660,7 @@ const activeClueText =
       function renderGrid() {
         return (
           <div
-  className="grid gap-1 w-[92vw] max-w-[420px] md:w-auto"
+          className="grid gap-1 w-full max-w-[420px] md:w-auto"
   style={{
     gridTemplateColumns: `repeat(${cols}, 1fr)`,
     maxHeight: isMobile ? '60vh' : undefined
@@ -705,8 +705,15 @@ const activeClueText =
                           setActive({ row: r, col: c })
                         }}
                         onClick={() => {
-                          if (active.row === r && active.col === c) {
-                            setDirection(d => d === 'across' ? 'down' : 'across')
+                          const isSameCell =
+                            active.row === r && active.col === c
+                        
+                          if (isSameCell) {
+                            setDirection(d =>
+                              d === 'across' ? 'down' : 'across'
+                            )
+                          } else {
+                            setDirection('across')
                           }
                         }}
                         maxLength={1}
@@ -721,9 +728,11 @@ const activeClueText =
         )
       }
   return (
-    <main className="min-h-screen md:min-h-0 flex flex-col md:flex-row bg-white">
-      <section className="w-full flex flex-col items-center md:items-start px-4 md:px-0 pt-4 md:pt-0 pb-24 md:pb-0 min-h-screen md:min-h-0 overflow-x-hidden">
-      <div className="flex justify-between items-start mb-6 md:mb-10">
+    <main className="min-h-screen flex flex-col md:flex-row bg-white md:items-start md:justify-center">
+      <section className="w-full flex flex-col items-center md:items-start px-4 md:px-0 pt-4 md:pt-0 pb-32 md:pb-0">
+      <div className="w-full md:max-w-4xl md:mx-auto">
+      <div className="flex justify-between items-start mb-4 md:mb-10">
+
 
 {/* Left side */}
 <div className="flex items-center gap-4">
@@ -760,7 +769,7 @@ const activeClueText =
 
       </div>
         
-      <div className="mb-6 flex items-baseline gap-3">
+      <div className="mb-4 md:mb-6 flex items-baseline gap-3">
   <span className="uppercase text-xs tracking-widest text-neutral-500">
     Time
   </span>
@@ -801,6 +810,7 @@ const activeClueText =
 
 
 {renderGrid()}
+</div>
       </section>
 
       <aside className="hidden md:block w-80">
@@ -877,7 +887,7 @@ const activeClueText =
       </aside>
       {/* MOBILE FIXED CLUE BAR */}
 {isMobile && (
-  <div className="fixed bottom-0 left-0 right-0 bg-white border-t px-4 py-3 md:hidden z-40 shadow-lg safe-area-bottom">
+  <div className="fixed bottom-0 left-0 right-0 bg-white border-t px-4 py-2 md:hidden z-40 shadow-lg">
 
     <div className="flex items-center justify-between">
 
