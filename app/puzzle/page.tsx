@@ -801,7 +801,46 @@ const activeClueText =
         )
       }
 
-
+      if (showCompletionOverlay) {
+        return (
+          <div className="fixed inset-0 bg-white z-[100] flex items-center justify-center p-6 text-center">
+            <div className="space-y-6">
+              <h1 className="text-2xl font-bold">
+                Puzzle Completed!
+              </h1>
+      
+              <div className="text-4xl font-mono">
+                {formatTime(seconds)}
+              </div>
+      
+              {puzzle?.author && (
+                <div className="text-sm text-neutral-600">
+                  Written by{" "}
+                  <span className="font-medium text-red-900">
+                    {puzzle.author}
+                  </span>
+                </div>
+              )}
+      
+              <div className="flex flex-col gap-4 mt-6">
+                <button
+                  onClick={() => router.push('/leaderboard')}
+                  className="bg-black text-white px-6 py-3 rounded-lg"
+                >
+                  View Leaderboard
+                </button>
+      
+                <button
+                  onClick={() => setShowCompletionOverlay(false)}
+                  className="border px-6 py-3 rounded-lg"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      }
 if (isMobile) {
   return (
     <div className="h-screen flex flex-col bg-white">
@@ -1199,46 +1238,7 @@ if (isMobile) {
     View Leaderboard
   </button>
 </div>
-{showCompletionOverlay && (
-  <div className="fixed inset-0 bg-white z-50 flex items-center justify-center p-6 text-center">
-    <div className="text-center space-y-6">
-    <h1 className="text-3xl font-bold tracking-tight">
-  Puzzle Completed !
-</h1>
 
-<div className="text-4xl font-mono">
-  {formatTime(seconds)}
-</div>
-
-{puzzle?.author && (
-  <div className="text-sm text-neutral-600 italic mt-3">
-    Written by{' '}
-    <span className="not-italic font-medium text-red-900">
-      {puzzle.author}
-    </span>
-  </div>
-)}
-
-      <div className="flex flex-col gap-4 mt-6">
-        <button
-          onClick={() => router.push('/leaderboard')}
-          className="bg-black text-white px-6 py-3 rounded-lg"
-        >
-          View Leaderboard
-        </button>
-
-        <button
-          onClick={() => {
-            setShowCompletionOverlay(false)
-          }}
-          className="border px-6 py-3 rounded-lg"
-        >
-          Close
-        </button>
-      </div>
-    </div>
-  </div>
-)}
     </main>
   )
 }
