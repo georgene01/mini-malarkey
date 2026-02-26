@@ -633,7 +633,6 @@ return null
     </h1>
   </div>
 </div>
-<div className="fixed inset-0 bg-white z-50 flex items-center justify-center transition-opacity duration-500"></div>
 {/* Right side controls */}
 <div className="flex items-center gap-8">
 

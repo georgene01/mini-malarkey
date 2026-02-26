@@ -3,11 +3,27 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/src/lib/supabase'
 import { useRouter } from 'next/navigation'
+import { isUsernameProfane } from '@/src/lib/usernameModeration'
 
 export default function ChooseUsername() {
   const [username, setUsername] = useState('')
   const [user, setUser] = useState<any>(null)
   const router = useRouter()
+  const bannedWords = [
+    'admin',
+    'moderator',
+    'support',
+    'fuck',
+    'shit',
+    'bitch',
+    'nazi',
+    'racist',
+    'sexist',
+    'slut',
+    'whore',
+    'retard',
+    'kys'
+  ]
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -19,28 +35,70 @@ export default function ChooseUsername() {
     })
   }, [])
 
+  function normalizeUsername(name: string) {
+    return name
+      .toLowerCase()
+      .replace(/0/g, 'o')
+      .replace(/1/g, 'i')
+      .replace(/3/g, 'e')
+      .replace(/4/g, 'a')
+      .replace(/5/g, 's')
+      .replace(/7/g, 't')
+      .replace(/@/g, 'a')
+      .replace(/\$/g, 's')
+      .replace(/_/g, '')
+      .replace(/\./g, '')
+  }
+  function isUsernameAllowed(name: string) {
+    const normalized = normalizeUsername(name)
+  
+    return !bannedWords.some(word =>
+      normalized.includes(word)
+    )
+  }
+
   async function saveUsername() {
-    if (!username) {
+    if (!user) return
+  
+    const clean = username.toLowerCase().trim()
+  
+    if (!clean) {
       alert('Enter a username')
       return
     }
-
+  
+    if (clean.length < 3) {
+      alert('Username must be at least 3 characters')
+      return
+    }
+  
+    if (!/^[a-z0-9._]+$/.test(clean)) {
+      alert('Only lowercase letters, numbers, dots and underscores allowed')
+      return
+    }
+  
+    // ✅ PROFANITY CHECK GOES RIGHT HERE
+    if (isUsernameProfane(clean)) {
+      alert('That username is not allowed')
+      return
+    }
+  
     const { error } = await supabase
-  .from('profiles')
-  .insert({
-    id: user.id,
-    username: username.toLowerCase().trim()
-  })
-
-if (error) {
-  if (error.code === '23505') {
-    alert('Username already taken')
-  } else {
-    alert('Something went wrong')
-  }
-  return
-}
-
+      .from('profiles')
+      .insert({
+        id: user.id,
+        username: clean
+      })
+  
+    if (error) {
+      if (error.code === '23505') {
+        alert('Username already taken')
+      } else {
+        alert('Something went wrong')
+      }
+      return
+    }
+  
     router.push('/')
   }
 
