@@ -29,7 +29,7 @@ type Score = { time: number; date: string }
 export default function HomePage() {
 
   const [showCompletionOverlay, setShowCompletionOverlay] = useState(false)
-
+  const [isMobile, setIsMobile] = useState(false)
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null)
   const [userGrid, setUserGrid] = useState<string[][]>([])
   const [numbers, setNumbers] = useState<NumberedCell[][]>([])
@@ -69,6 +69,17 @@ export default function HomePage() {
     return () => {
       listener.subscription.unsubscribe()
     }
+  }, [])
+
+  useEffect(() => {
+    const check = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+  
+    check()
+    window.addEventListener('resize', check)
+  
+    return () => window.removeEventListener('resize', check)
   }, [])
 
   useEffect(() => {
@@ -610,7 +621,74 @@ return null
       .padStart(2, '0')}:${(s % 60)
       .toString()
       .padStart(2, '0')}`
-
+      function renderGrid() {
+        return (
+          <div
+            className="grid gap-1 w-full max-w-[420px] mx-auto"
+            style={{
+              gridTemplateColumns: `repeat(${cols}, 1fr)`
+            }}
+          >
+            {puzzle!.grid.map((row, r) =>
+              row.map((cell, c) => {
+                const inWord = activeWord.some(
+                  p => p.row === r && p.col === c
+                )
+                const isActive =
+                  active.row === r && active.col === c
+      
+                const bg =
+                  cell === '#'
+                    ? 'bg-neutral-900'
+                    : isActive
+                    ? 'bg-red-300'
+                    : inWord
+                    ? 'bg-red-100'
+                    : 'bg-white'
+      
+                return (
+                  <div
+                    key={`${r}-${c}`}
+                    className={`relative aspect-square border border-neutral-400 ${bg}`}
+                  >
+                    {cell !== '#' && (
+                      <input
+                        disabled={isComplete && !isReplayMode}
+                        ref={el => {
+                          inputs.current[r][c] = el
+                        }}
+                        value={userGrid[r][c]}
+                        onChange={e =>
+                          handleChange(r, c, e.target.value)
+                        }
+                        onKeyDown={e =>
+                          handleKeyDown(e, r, c)
+                        }
+                        onFocus={() => {
+                          if (
+                            active.row === r &&
+                            active.col === c
+                          ) {
+                            setDirection(d =>
+                              d === 'across'
+                                ? 'down'
+                                : 'across'
+                            )
+                          } else {
+                            setActive({ row: r, col: c })
+                          }
+                        }}
+                        maxLength={1}
+                        className="w-full h-full text-center text-xl font-bold tracking-wide uppercase outline-none bg-transparent"
+                      />
+                    )}
+                  </div>
+                )
+              })
+            )}
+          </div>
+        )
+      }
   return (
     <main className="p-4 md:p-6 flex flex-col md:flex-row gap-6 md:gap-8">
       <section>
@@ -736,61 +814,8 @@ return null
   </button>
 
 </div>
-        <div
-          className="grid gap-1"
-          style={{
-            gridTemplateColumns: `repeat(${cols}, 1fr)`,
-            maxWidth: '100%',
-            width: '100%'
-          }}
-        >
-          {puzzle.grid.map((row, r) =>
-            row.map((cell, c) => {
-              const inWord = activeWord.some(
-                p => p.row === r && p.col === c
-              )
-              const isActive =
-                active.row === r && active.col === c
 
-                const bg =
-  cell === '#'
-    ? 'bg-neutral-900'
-    : isActive
-    ? 'bg-red-300'
-    : inWord
-    ? 'bg-red-100'
-    : 'bg-white'
-
-              return (
-                <div
-                  key={`${r}-${c}`}
-                  className={`relative aspect-square border border-neutral-400 ${bg}`}
-                >
-                  {cell !== '#' && (
-                    <input
-                      disabled={isComplete && !isReplayMode}
-                      ref={el => {
-                        inputs.current[r][c] = el
-                      }}
-                      value={userGrid[r][c]}
-                      onChange={e =>
-                        handleChange(r, c, e.target.value)
-                      }
-                      onKeyDown={e =>
-                        handleKeyDown(e, r, c)
-                      }
-                      onFocus={() =>
-                        setActive({ row: r, col: c })
-                      }
-                      maxLength={1}
-                      className="w-full h-full text-center text-lg md:text-xl font-bold tracking-wide uppercase outline-none bg-transparent"
-                    />
-                  )}
-                </div>
-              )
-            })
-          )}
-        </div>
+{renderGrid()}
       </section>
 
       <aside className="w-full md:w-80 mt-6 md:mt-0">
@@ -803,6 +828,7 @@ return null
             const isActive =
               direction === 'across' &&
               activeClueNumber === Number(num)
+              
 
             return (
               <div
