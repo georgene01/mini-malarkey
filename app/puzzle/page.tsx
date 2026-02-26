@@ -484,9 +484,14 @@ return null
         setActive(next)
       } else {
         const jump = getNextClueStart(g, currentWordStart, direction)
-        if (jump) {
-          setActive(jump.pos)
-        }
+
+if (jump) {
+  setActive(jump.pos)
+
+  if (jump.newDir) {
+    setDirection(jump.newDir)
+  }
+}
       }
   
     if (isAllFilled(g)) {
