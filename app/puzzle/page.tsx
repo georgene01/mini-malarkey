@@ -480,20 +480,14 @@ return null
         wasEmpty
       )
   
-    if (next) {
-      setActive(next)
-    } else {
-      const jump = getNextClueStart(
-        g,
-        currentWordStart,
-        direction
-      )
-  
-      if (jump) {
-        setDirection(jump.newDir)
-        setActive(jump.pos)
+      if (next) {
+        setActive(next)
+      } else {
+        const jump = getNextClueStart(g, currentWordStart, direction)
+        if (jump) {
+          setActive(jump.pos)
+        }
       }
-    }
   
     if (isAllFilled(g)) {
 
@@ -660,10 +654,9 @@ const activeClueText =
       function renderGrid() {
         return (
           <div
-          className="grid gap-1 w-full max-w-[420px] md:w-auto"
+  className="grid gap-1 w-full max-w-[420px] md:w-auto mx-auto"
   style={{
-    gridTemplateColumns: `repeat(${cols}, 1fr)`,
-    maxHeight: isMobile ? '60vh' : undefined
+    gridTemplateColumns: `repeat(${cols}, 1fr)`
   }}
 >
             {puzzle!.grid.map((row, r) =>
@@ -728,8 +721,8 @@ const activeClueText =
         )
       }
   return (
-    <main className="min-h-screen flex flex-col md:flex-row bg-white md:items-start md:justify-center">
-      <section className="w-full flex flex-col items-center md:items-start px-4 md:px-0 pt-4 md:pt-0 pb-32 md:pb-0">
+    <main className="h-screen md:min-h-screen flex flex-col md:flex-row bg-white overflow-hidden">
+      <section className="w-full flex flex-col items-center md:items-start px-4 md:px-0 pt-4 md:pt-0 flex-1 overflow-hidden">
       <div className="w-full md:max-w-4xl md:mx-auto">
       <div className="flex justify-between items-start mb-4 md:mb-10">
 
@@ -809,7 +802,9 @@ const activeClueText =
         </div>
 
 
-{renderGrid()}
+        <div className="flex-1 flex items-center justify-center w-full overflow-hidden">
+  {renderGrid()}
+</div>
 </div>
       </section>
 
@@ -887,7 +882,7 @@ const activeClueText =
       </aside>
       {/* MOBILE FIXED CLUE BAR */}
 {isMobile && (
-  <div className="fixed bottom-0 left-0 right-0 bg-white border-t px-4 py-2 md:hidden z-40 shadow-lg">
+  <div className="fixed bottom-0 left-0 right-0 bg-white border-t px-4 py-3 md:hidden z-40">
 
     <div className="flex items-center justify-between">
 
