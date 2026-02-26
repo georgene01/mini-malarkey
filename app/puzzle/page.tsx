@@ -621,6 +621,42 @@ return null
       .padStart(2, '0')}:${(s % 60)
       .toString()
       .padStart(2, '0')}`
+
+      const acrossClues = Object.entries(puzzle!.clues.across)
+  .map(([num, clue]) => ({
+    num: Number(num),
+    clue
+  }))
+  .sort((a, b) => a.num - b.num)
+
+const downClues = Object.entries(puzzle!.clues.down)
+  .map(([num, clue]) => ({
+    num: Number(num),
+    clue
+  }))
+  .sort((a, b) => a.num - b.num)
+
+  const activeClueList =
+  direction === 'across' ? acrossClues : downClues
+
+const activeClueIndex = activeClueList.findIndex(
+  c => c.num === activeClueNumber
+)
+
+const activeClueText =
+  activeClueIndex !== -1
+    ? activeClueList[activeClueIndex].clue
+    : ''
+
+    function goToClueByIndex(index: number) {
+      if (index < 0 || index >= activeClueList.length) return
+    
+      const clue = activeClueList[index]
+      const start = findStart(clue.num, numbers)
+    
+      setActive(start)
+    }
+
       function renderGrid() {
         return (
           <div
@@ -762,57 +798,53 @@ return null
 )}
         </div>
 {/* MOBILE CLUE CONTROLS */}
-<div className="md:hidden mt-6 flex items-center justify-between border-t pt-4">
+{isMobile && (
+  <div className="md:hidden mt-6 border-t pt-4">
 
-  {/* Previous Clue */}
-  <button
-    onClick={() => {
-      const prev = getPreviousClueEnd(
-        userGrid,
-        getWordStart(active, direction),
-        direction
-      )
-      if (prev) setActive(prev)
-    }}
-    className="px-4 py-2 border rounded text-sm"
-  >
-    ← Prev
-  </button>
+    {/* Clue Bar */}
+    <div className="flex items-center justify-between">
 
-  {/* Toggle Direction */}
-  <button
-    onClick={() =>
-      setDirection(d => (d === 'across' ? 'down' : 'across'))
-    }
-    className="px-6 py-2 border rounded text-sm font-semibold"
-  >
-    {direction.toUpperCase()}
-  </button>
+      {/* Prev */}
+      <button
+        onClick={() => goToClueByIndex(activeClueIndex - 1)}
+        className="px-4 py-2 text-lg"
+      >
+        ←
+      </button>
 
-  {/* Next Clue */}
-  <button
-    onClick={() => {
-      const jump = getNextClueStart(
-        userGrid,
-        getWordStart(active, direction),
-        direction
-      )
-      if (jump) {
-        setDirection(jump.newDir)
-        setActive(jump.pos)
-      }
-    }}
-    className="px-4 py-2 border rounded text-sm"
-  >
-    Next →
-  </button>
+      {/* Clue Display */}
+      <div
+        className="text-center flex-1 px-4 cursor-pointer"
+        onClick={() =>
+          setDirection(d =>
+            d === 'across' ? 'down' : 'across'
+          )
+        }
+      >
+        <div className="text-xs uppercase tracking-widest text-neutral-500">
+          {direction.toUpperCase()}
+        </div>
+        <div className="font-medium">
+          {activeClueNumber}. {activeClueText}
+        </div>
+      </div>
 
-</div>
+      {/* Next */}
+      <button
+        onClick={() => goToClueByIndex(activeClueIndex + 1)}
+        className="px-4 py-2 text-lg"
+      >
+        →
+      </button>
+
+    </div>
+  </div>
+)}
 
 {renderGrid()}
       </section>
 
-      <aside className="w-full md:w-80 mt-6 md:mt-0">
+      <aside className="hidden md:block w-80">
       <h2 className="text-lg font-bold uppercase tracking-wider mb-4 text-neutral-900">
   Across
 </h2>
