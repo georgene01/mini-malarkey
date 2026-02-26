@@ -665,17 +665,11 @@ return null
                           handleKeyDown(e, r, c)
                         }
                         onFocus={() => {
-                          if (
-                            active.row === r &&
-                            active.col === c
-                          ) {
-                            setDirection(d =>
-                              d === 'across'
-                                ? 'down'
-                                : 'across'
-                            )
-                          } else {
-                            setActive({ row: r, col: c })
+                          setActive({ row: r, col: c })
+                        }}
+                        onClick={() => {
+                          if (active.row === r && active.col === c) {
+                            setDirection(d => d === 'across' ? 'down' : 'across')
                           }
                         }}
                         maxLength={1}
