@@ -660,7 +660,7 @@ const activeClueText =
       function renderGrid() {
         return (
           <div
-          className="grid gap-1 mx-auto w-[90vw] max-w-[420px]"
+          className="grid gap-1 w-[92vw] max-w-[420px]"
             style={{
               gridTemplateColumns: `repeat(${cols}, 1fr)`
             }}
@@ -720,9 +720,9 @@ const activeClueText =
         )
       }
   return (
-    <main className="p-4 md:p-6 flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8">
-      <section className="pb-24 md:pb-0">
-      <div className="flex justify-between items-start mb-10">
+    <main className="min-h-screen md:min-h-0 p-4 md:p-6 flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8 bg-white">
+      <section className="pb-24 md:pb-0 w-full flex flex-col items-center">
+      <div className="flex justify-between items-start mb-6 md:mb-10">
 
 {/* Left side */}
 <div className="flex items-center gap-4">
@@ -736,8 +736,8 @@ const activeClueText =
     <div className="text-sm tracking-[0.2em] uppercase text-neutral-500">
       Daily Malarkey
     </div>
-    <h1 className="text-3xl font-bold tracking-tight">
-      The Mini Crossword
+    <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+      The Mini Malarkey
     </h1>
   </div>
 </div>
@@ -876,7 +876,7 @@ const activeClueText =
       </aside>
       {/* MOBILE FIXED CLUE BAR */}
 {isMobile && (
-  <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 md:hidden z-40">
+  <div className="fixed bottom-0 left-0 right-0 bg-white border-t px-4 py-3 md:hidden z-40 shadow-lg">
 
     <div className="flex items-center justify-between">
 
@@ -931,7 +931,7 @@ const activeClueText =
 
 
 {/* Floating Leaderboard Button */}
-<div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
+<div className="hidden md:block fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
   <button
     onClick={() => router.push('/leaderboard')}
     className="border border-neutral-900 px-6 py-3 text-sm uppercase tracking-wide hover:bg-neutral-100"
