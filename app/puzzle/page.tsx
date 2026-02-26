@@ -755,167 +755,43 @@ const activeClueText =
         )
       }
 
-      if (isMobile) {
-  return (
-    <div className="h-screen flex flex-col bg-white">
-
-      {/* Header */}
-      <div className="px-4 pt-4 pb-2">
-        <div className="text-xs uppercase tracking-wide text-neutral-500">
-          Daily Malarkey
-        </div>
-
-        <div className="flex justify-between items-center mt-1">
-          <h1 className="text-xl font-bold">
-            The Mini Malarkey
-          </h1>
-
-          <div className="font-mono text-lg">
-            {formatTime(seconds)}
-          </div>
-        </div>
-      </div>
-
-      {/* Grid */}
-      <div className="flex-1 flex items-center justify-center px-4">
-        <div
-          className="grid gap-1 w-full max-w-[400px]"
-          style={{
-            gridTemplateColumns: `repeat(${cols}, 1fr)`
-          }}
-        >
-          {puzzle.grid.map((row, r) =>
-            row.map((cell, c) => {
-              const inWord = activeWord.some(
-                p => p.row === r && p.col === c
-              )
-
-              const isActive =
-                active.row === r && active.col === c
-
-              const bg =
-                cell === '#'
-                  ? 'bg-black'
-                  : isActive
-                  ? 'bg-red-300'
-                  : inWord
-                  ? 'bg-red-100'
-                  : 'bg-white'
-
-              return (
-                <div
-                  key={`${r}-${c}`}
-                  onClick={() => {
-                    const { across, down } =
-                      getAvailableDirections(r, c, puzzle)
-
-                    if (across && !down) {
-                      setDirection('across')
-                    } else if (!across && down) {
-                      setDirection('down')
-                    }
-
-                    setActive({ row: r, col: c })
-                  }}
-                  className={`aspect-square border border-neutral-400 ${bg} flex items-center justify-center text-2xl font-bold`}
-                >
-                  {cell !== '#' && userGrid[r][c]}
-                </div>
-              )
-            })
-          )}
-        </div>
-      </div>
-
-      {/* Clue Bar */}
-      <div className="px-4 py-3 border-t border-b flex items-center justify-between bg-neutral-50">
-
-        <button
-          onClick={() =>
-            setDirection(d =>
-              d === 'across' ? 'down' : 'across'
-            )
-          }
-          className="text-sm font-semibold"
-        >
-          {direction.toUpperCase()}
-        </button>
-
-        <div className="text-sm text-center flex-1 px-2">
-          {activeClueNumber}. {activeClueText}
-        </div>
-
-        <button
-          onClick={() =>
-            setDirection(d =>
-              d === 'across' ? 'down' : 'across'
-            )
-          }
-          className="text-sm font-semibold"
-        >
-          ↕
-        </button>
-      </div>
-
-      {/* Keyboard */}
-      <div className="bg-neutral-200 px-2 py-2">
-
-        {["QWERTYUIOP","ASDFGHJKL","ZXCVBNM"].map((row, i) => (
-          <div key={i} className="flex justify-center gap-1 mb-2">
-            {row.split("").map(letter => (
-              <button
-                key={letter}
-                onClick={() =>
-                  handleChange(
-                    active.row,
-                    active.col,
-                    letter
-                  )
-                }
-                className="bg-white rounded-md px-3 py-3 text-lg font-medium active:bg-neutral-300"
-              >
-                {letter}
-              </button>
-            ))}
-          </div>
-        ))}
-
-        <div className="flex justify-center gap-2">
-          <button
-            onClick={() =>
-              handleMobileBackspace()
-            }
-            className="bg-neutral-400 rounded-md px-6 py-3 text-lg"
-          >
-            ⌫
-          </button>
-        </div>
-
-      </div>
-    </div>
-  )
-}
 
 if (isMobile) {
   return (
     <div className="h-screen flex flex-col bg-white">
 
       {/* Header */}
-      <div className="px-4 pt-4 pb-2">
-        <div className="text-xs uppercase tracking-wide text-neutral-500">
-          Daily Malarkey
-        </div>
+<div className="px-4 pt-4 pb-2">
 
-        <div className="flex justify-between items-center mt-1">
-          <h1 className="text-xl font-bold">
-            The Mini Malarkey
-          </h1>
+<div className="flex justify-between items-center">
 
-          <div className="font-mono text-lg">
-            {formatTime(seconds)}
-          </div>
-        </div>
-      </div>
+  <div>
+    <div className="text-xs uppercase tracking-wide text-neutral-500">
+      Daily Malarkey
+    </div>
+
+    <h1 className="text-xl font-bold">
+      The Mini Malarkey
+    </h1>
+  </div>
+
+  <div className="flex items-center gap-4">
+    <div className="font-mono text-lg">
+      {formatTime(seconds)}
+    </div>
+
+    {isComplete && (
+      <button
+        onClick={handleReplay}
+        className="text-sm border px-3 py-1 rounded-md"
+      >
+        Replay
+      </button>
+    )}
+  </div>
+
+</div>
+</div>
 
       {/* Grid */}
       <div className="flex-1 flex items-center justify-center px-4">
@@ -969,70 +845,117 @@ if (isMobile) {
       </div>
 
       {/* Clue Bar */}
-      <div className="px-4 py-3 border-t border-b flex items-center justify-between bg-neutral-50">
+<div className="px-4 py-3 border-t border-b flex items-center bg-neutral-50">
 
-        <button
-          onClick={() =>
-            setDirection(d =>
-              d === 'across' ? 'down' : 'across'
-            )
-          }
-          className="text-sm font-semibold"
-        >
-          {direction.toUpperCase()}
-        </button>
+{/* Previous Clue */}
+<button
+  onClick={() =>
+    goToClueByIndex(activeClueIndex - 1)
+  }
+  className="text-xl px-3"
+>
+  ‹
+</button>
 
-        <div className="text-sm text-center flex-1 px-2">
-          {activeClueNumber}. {activeClueText}
-        </div>
+{/* Clue Content (FULL BAR TOGGLES) */}
+<div
+  onClick={() =>
+    setDirection(d =>
+      d === 'across' ? 'down' : 'across'
+    )
+  }
+  className="flex-1 text-center cursor-pointer"
+>
+  <div className="text-xs uppercase tracking-wide text-neutral-500">
+    {direction}
+  </div>
 
-        <button
-          onClick={() =>
-            setDirection(d =>
-              d === 'across' ? 'down' : 'across'
-            )
-          }
-          className="text-sm font-semibold"
-        >
-          ↕
-        </button>
-      </div>
+  <div className="font-medium">
+    {activeClueNumber}. {activeClueText}
+  </div>
+</div>
+
+{/* Next Clue */}
+<button
+  onClick={() =>
+    goToClueByIndex(activeClueIndex + 1)
+  }
+  className="text-xl px-3"
+>
+  ›
+</button>
+
+</div>
 
       {/* Keyboard */}
-      <div className="bg-neutral-200 px-2 py-2">
+<div className="bg-neutral-200 px-2 py-3">
 
-        {["QWERTYUIOP","ASDFGHJKL","ZXCVBNM"].map((row, i) => (
-          <div key={i} className="flex justify-center gap-1 mb-2">
-            {row.split("").map(letter => (
-              <button
-                key={letter}
-                onClick={() =>
-                  handleChange(
-                    active.row,
-                    active.col,
-                    letter
-                  )
-                }
-                className="bg-white rounded-md px-3 py-3 text-lg font-medium active:bg-neutral-300"
-              >
-                {letter}
-              </button>
-            ))}
-          </div>
-        ))}
+{/* Row 1 */}
+<div className="flex justify-center gap-1 mb-2">
+  {"QWERTYUIOP".split("").map(letter => (
+    <button
+      key={letter}
+      onClick={() =>
+        handleChange(active.row, active.col, letter)
+      }
+      className="bg-white rounded-md w-9 h-12 text-lg font-medium active:bg-neutral-300"
+    >
+      {letter}
+    </button>
+  ))}
+</div>
 
-        <div className="flex justify-center gap-2">
-          <button
-            onClick={() =>
-              handleMobileBackspace()
-            }
-            className="bg-neutral-400 rounded-md px-6 py-3 text-lg"
-          >
-            ⌫
-          </button>
-        </div>
+{/* Row 2 */}
+<div className="flex justify-center gap-1 mb-2">
+  {"ASDFGHJKL".split("").map(letter => (
+    <button
+      key={letter}
+      onClick={() =>
+        handleChange(active.row, active.col, letter)
+      }
+      className="bg-white rounded-md w-9 h-12 text-lg font-medium active:bg-neutral-300"
+    >
+      {letter}
+    </button>
+  ))}
+</div>
 
-      </div>
+{/* Row 3 */}
+<div className="flex justify-center gap-1">
+
+  {"ZXCVBNM".split("").map(letter => (
+    <button
+      key={letter}
+      onClick={() =>
+        handleChange(active.row, active.col, letter)
+      }
+      className="bg-white rounded-md w-9 h-12 text-lg font-medium active:bg-neutral-300"
+    >
+      {letter}
+    </button>
+  ))}
+
+  <button
+    onClick={handleMobileBackspace}
+    className="bg-neutral-400 rounded-md w-16 h-12 text-lg active:bg-neutral-500"
+  >
+    ⌫
+  </button>
+
+</div>
+
+</div>
+
+{isComplete && (
+  <div className="px-4 pb-3">
+    <button
+      onClick={() => router.push('/leaderboard')}
+      className="w-full bg-black text-white py-3 rounded-lg"
+    >
+      View Leaderboard
+    </button>
+  </div>
+)}
     </div>
   )
 }
