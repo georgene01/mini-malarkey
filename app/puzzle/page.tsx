@@ -514,7 +514,7 @@ return null
     
         setTimeout(() => {
           setStartWipe(true)
-        }, 500)
+        }, 300)
     
         setTimeout(() => {
           if (!puzzle) return
