@@ -701,13 +701,30 @@ const activeClueText =
                           const isSameCell =
                             active.row === r && active.col === c
                         
-                          if (isSameCell) {
-                            setDirection(d =>
-                              d === 'across' ? 'down' : 'across'
-                            )
-                          } else {
+                          const { across, down } =
+                            getAvailableDirections(r, c, puzzle!)
+                        
+                          // Only across possible
+                          if (across && !down) {
                             setDirection('across')
                           }
+                        
+                          // Only down possible
+                          else if (!across && down) {
+                            setDirection('down')
+                          }
+                        
+                          // Both possible
+                          else if (across && down) {
+                            if (isSameCell) {
+                              setDirection(d =>
+                                d === 'across' ? 'down' : 'across'
+                              )
+                            }
+                            // If different cell, keep current direction
+                          }
+                        
+                          setActive({ row: r, col: c })
                         }}
                         maxLength={1}
                         className="w-full h-full text-center text-2xl md:text-xl font-bold tracking-wide uppercase outline-none bg-transparent"
@@ -990,7 +1007,32 @@ const activeClueText =
 }
 
 /* ================= UTIL ================= */
+function getAvailableDirections(
+  row: number,
+  col: number,
+  puzzle: Puzzle
+): { across: boolean; down: boolean } {
+  const rows = puzzle.grid.length
+  const cols = puzzle.grid[0].length
 
+  const isBlack = (r: number, c: number) =>
+    r < 0 ||
+    c < 0 ||
+    r >= rows ||
+    c >= cols ||
+    puzzle.grid[r][c] === '#'
+
+  const canAcross =
+    !isBlack(row, col - 1) || !isBlack(row, col + 1)
+
+  const canDown =
+    !isBlack(row - 1, col) || !isBlack(row + 1, col)
+
+  return {
+    across: canAcross,
+    down: canDown
+  }
+}
 function generateNumbers(grid: string[][]): NumberedCell[][] {
   let count = 1
 
