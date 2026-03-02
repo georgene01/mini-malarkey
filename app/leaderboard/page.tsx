@@ -194,7 +194,7 @@ if (incoming.length > 0) {
   }
 
   return (
-    <div className="max-w-xl mx-auto mt-20 font-serif text-neutral-900">
+    <div className="w-full max-w-xl mx-auto px-4 pt-6 md:pt-20 font-serif text-neutral-900">
 
       <button
         onClick={() => router.push('/puzzle')}
@@ -202,11 +202,11 @@ if (incoming.length > 0) {
       >
         ← Back to Puzzle
       </button>
-      <h1 className="text-2xl mb-8 tracking-tight">
+      <h1 className="text-xl md:text-2xl mb-6 md:mb-8 tracking-tight">
   Daily Malarkey Leaderboard
 </h1>
       {/* Tabs */}
-      <div className="flex justify-center gap-12 mb-10 text-sm tracking-wide uppercase">
+      <div className="flex justify-center gap-8 mb-6 text-xs md:text-sm tracking-wide uppercase">
   <button
     onClick={() => setTab(0)}
     className={`pb-1 border-b ${
@@ -252,16 +252,24 @@ if (incoming.length > 0) {
       {publicScores.map((s, i) => (
         <div
         key={i}
-        className={`flex justify-between py-3 border-t ${
+        className={`flex items-center py-3 border-t ${
           s.user_id === user?.id
             ? 'bg-neutral-200 font-medium'
             : ''
         }`}
       >
-          <span>#{i + 1}</span>
-          <span>{s.profiles?.username}</span>
-          <span>{formatTime(s.solve_time)}</span>
-        </div>
+        <span className="w-8 text-neutral-500 text-sm">
+          {i + 1}.
+        </span>
+      
+        <span className="flex-1 truncate text-sm">
+          {s.profiles?.username}
+        </span>
+      
+        <span className="tabular-nums w-16 text-right text-sm">
+          {formatTime(s.solve_time)}
+        </span>
+      </div>
       ))}
     </div>
 
@@ -294,7 +302,7 @@ if (incoming.length > 0) {
   )}
 
   {/* 🔎 Search */}
-  <div className="flex gap-2">
+  <div className="flex gap-2 flex-col sm:flex-row">
     <input
       value={searchTerm}
       onChange={e => setSearchTerm(e.target.value)}
@@ -377,13 +385,13 @@ if (incoming.length > 0) {
       }`}
     >
       {/* Rank */}
-      <span className="w-8 text-neutral-500">
+      <span className="w-6 text-neutral-500 text-sm">
         {i + 1}.
       </span>
     
       {/* Username */}
       <span
-        className={`flex-1 ${
+  className={`flex-1 truncate text-sm ${
           s.id === user?.id ? 'italic' : ''
         }`}
       >
@@ -391,7 +399,7 @@ if (incoming.length > 0) {
       </span>
     
       {/* Time + Remove */}
-      <div className="flex items-center gap-3 w-28 justify-end">
+      <div className="flex items-center gap-2 w-24 justify-end">
     
         {/* Time (fixed width for perfect alignment) */}
         <span className="tabular-nums w-16 text-right">
