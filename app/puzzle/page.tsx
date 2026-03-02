@@ -8,6 +8,7 @@ import Image from 'next/image'
 
 type Puzzle = {
   grid: string[][]
+  shaded?: boolean[][]   // 👈 NEW
   clues: {
     across: Record<string, string>
     down: Record<string, string>
@@ -729,14 +730,18 @@ const activeClueText =
                 const isActive =
                   active.row === r && active.col === c
       
-                const bg =
-                  cell === '#'
-                    ? 'bg-neutral-900'
-                    : isActive
-                    ? 'bg-red-300'
-                    : inWord
-                    ? 'bg-red-100'
-                    : 'bg-white'
+                  const isShaded = puzzle!.shaded?.[r]?.[c]
+
+                  const bg =
+                    cell === '#'
+                      ? 'bg-black'
+                      : isActive
+                      ? 'bg-red-300'
+                      : inWord
+                      ? 'bg-red-100'
+                      : isShaded
+                      ? 'bg-neutral-200'
+                      : 'bg-white'
       
                 return (
                   <div

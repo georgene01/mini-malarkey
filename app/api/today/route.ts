@@ -14,7 +14,7 @@ export async function GET() {
   // Fetch today's puzzle
   const { data, error } = await supabase
     .from('puzzles')
-    .select('id, sa_date, grid, clues, author')
+    .select('id, sa_date, grid, clues, author, shaded')
     .eq('sa_date', saDate)
     .limit(1)
 
