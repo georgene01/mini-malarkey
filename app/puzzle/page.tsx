@@ -921,7 +921,7 @@ if (isMobile) {
 
               const isActive =
                 active.row === r && active.col === c
-
+                const isShaded = puzzle!.shaded?.[r]?.[c]
               
 const bg =
 cell === '#'
@@ -930,8 +930,8 @@ cell === '#'
   ? 'bg-red-300'
   : inWord
   ? 'bg-red-100'
-  : isActive
-  ? 'bg-neutral-200'
+  : isShaded
+  ? 'bg-neutral-300'
   : 'bg-white'
 
               return (
