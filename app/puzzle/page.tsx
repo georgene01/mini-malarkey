@@ -996,68 +996,50 @@ if (isMobile) {
 
 
 {/* Keyboard */}
-{/* Keyboard */}
-<div className="bg-neutral-200 px-3 py-3 shrink-0">
+<div className="bg-neutral-200 px-4 py-3 shrink-0">
 
-  {[
-    "QWERTYUIOP",
-    "ASDFGHJKL",
-    "ZXCVBNM"
-  ].map((row, rowIndex) => (
-    <div
-      key={rowIndex}
-      className="grid gap-1 mb-2"
-      style={{
-        gridTemplateColumns: `repeat(${row.length}, 1fr)`
-      }}
-    >
-      {row.split("").map(letter => (
-        <button
-          key={letter}
-          onClick={() =>
-            handleChange(active.row, active.col, letter)
-          }
-          className="
-            bg-white
-            h-12
-            rounded-lg
-            text-lg
-            font-medium
-            active:scale-95
-            active:bg-neutral-300
-            transition
-            duration-75
-            select-none
-          "
-        >
-          {letter}
-        </button>
-      ))}
-    </div>
-  ))}
+  {/* Row 1 */}
+  <div
+    className="grid gap-1 mb-2"
+    style={{ gridTemplateColumns: "repeat(10, 1fr)" }}
+  >
+    {"QWERTYUIOP".split("").map(letter => (
+      <button
+        key={letter}
+        onClick={() => handleMobileKey(letter)}
+        className="bg-white h-14 rounded-lg text-lg font-medium active:scale-95 active:bg-neutral-300 transition duration-75 select-none"
+      >
+        {letter}
+      </button>
+    ))}
+  </div>
 
-  {/* Backspace Row */}
-  <div className="grid gap-1"
-       style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr auto" }}>
+  {/* Row 2 */}
+  <div
+    className="grid gap-1 mb-2"
+    style={{ gridTemplateColumns: "repeat(9, 1fr)" }}
+  >
+    {"ASDFGHJKL".split("").map(letter => (
+      <button
+        key={letter}
+        onClick={() => handleMobileKey(letter)}
+        className="bg-white h-14 rounded-lg text-lg font-medium active:scale-95 active:bg-neutral-300 transition duration-75 select-none"
+      >
+        {letter}
+      </button>
+    ))}
+  </div>
 
+  {/* Row 3 + Backspace */}
+  <div
+    className="grid gap-1"
+    style={{ gridTemplateColumns: "repeat(7, 1fr) auto" }}
+  >
     {"ZXCVBNM".split("").map(letter => (
       <button
         key={letter}
-        onClick={() =>
-          handleChange(active.row, active.col, letter)
-        }
-        className="
-          bg-white
-          h-12
-          rounded-lg
-          text-lg
-          font-medium
-          active:scale-95
-          active:bg-neutral-300
-          transition
-          duration-75
-          select-none
-        "
+        onClick={() => handleMobileKey(letter)}
+        className="bg-white h-14 rounded-lg text-lg font-medium active:scale-95 active:bg-neutral-300 transition duration-75 select-none"
       >
         {letter}
       </button>
@@ -1065,21 +1047,10 @@ if (isMobile) {
 
     <button
       onClick={handleMobileBackspace}
-      className="
-        bg-neutral-400
-        h-12
-        px-4
-        rounded-lg
-        text-lg
-        active:scale-95
-        active:bg-neutral-500
-        transition
-        duration-75
-      "
+      className="bg-neutral-400 h-14 px-4 rounded-lg text-lg active:scale-95 active:bg-neutral-500 transition duration-75"
     >
       ⌫
     </button>
-
   </div>
 </div>
 
