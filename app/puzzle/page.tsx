@@ -859,7 +859,7 @@ const activeClueText =
       }
 if (isMobile) {
   return (
-    <div className="h-screen flex flex-col bg-white">
+    <div className="h-[100dvh] flex flex-col bg-white overflow-hidden">
 
       {/* Header */}
 <div className="px-4 pt-4 pb-2">
@@ -901,7 +901,7 @@ if (isMobile) {
   </div>
 )}
       {/* Grid */}
-      <div className="flex-1 flex items-start justify-center px-4 pt-2">
+      <div className="flex-1 flex items-center justify-center px-4">
         <div
           className="grid gap-1 w-full max-w-[92vw]"
           style={{
