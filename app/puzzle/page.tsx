@@ -996,65 +996,91 @@ if (isMobile) {
 
 
 {/* Keyboard */}
-<div className="bg-neutral-200 px-2 py-3 select-none">
+{/* Keyboard */}
+<div className="bg-neutral-200 px-3 py-3 shrink-0">
 
-  {["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"].map((row, i) => (
+  {[
+    "QWERTYUIOP",
+    "ASDFGHJKL",
+    "ZXCVBNM"
+  ].map((row, rowIndex) => (
     <div
-      key={i}
-      className="flex gap-1 mb-2"
+      key={rowIndex}
+      className="grid gap-1 mb-2"
+      style={{
+        gridTemplateColumns: `repeat(${row.length}, 1fr)`
+      }}
     >
       {row.split("").map(letter => (
         <button
           key={letter}
           onClick={() =>
-            requestAnimationFrame(() =>
-              handleChange(active.row, active.col, letter)
-            )
+            handleChange(active.row, active.col, letter)
           }
-          style={{ touchAction: 'manipulation' }}
           className="
             bg-white
+            h-12
             rounded-lg
-            flex-1
-            py-3
             text-lg
             font-medium
-            shadow-sm
-            transition
-            duration-75
             active:scale-95
             active:bg-neutral-300
+            transition
+            duration-75
+            select-none
           "
         >
           {letter}
         </button>
       ))}
-
-      {/* Add backspace to last row only */}
-      {i === 2 && (
-        <button
-          onClick={handleMobileBackspace}
-          style={{ touchAction: 'manipulation' }}
-          className="
-            bg-neutral-400
-            rounded-lg
-            px-4
-            py-3
-            text-lg
-            font-medium
-            shadow-sm
-            transition
-            duration-75
-            active:scale-95
-            active:bg-neutral-500
-          "
-        >
-          ⌫
-        </button>
-      )}
     </div>
   ))}
 
+  {/* Backspace Row */}
+  <div className="grid gap-1"
+       style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr auto" }}>
+
+    {"ZXCVBNM".split("").map(letter => (
+      <button
+        key={letter}
+        onClick={() =>
+          handleChange(active.row, active.col, letter)
+        }
+        className="
+          bg-white
+          h-12
+          rounded-lg
+          text-lg
+          font-medium
+          active:scale-95
+          active:bg-neutral-300
+          transition
+          duration-75
+          select-none
+        "
+      >
+        {letter}
+      </button>
+    ))}
+
+    <button
+      onClick={handleMobileBackspace}
+      className="
+        bg-neutral-400
+        h-12
+        px-4
+        rounded-lg
+        text-lg
+        active:scale-95
+        active:bg-neutral-500
+        transition
+        duration-75
+      "
+    >
+      ⌫
+    </button>
+
+  </div>
 </div>
 
 {isComplete && (
