@@ -800,12 +800,12 @@ export default function PuzzlePage() {
           </div>
         </div>
 
-        {/* Clue bar — sits directly above keyboard (NYT style) */}
-        <div className="flex items-center shrink-0 border-t border-b border-neutral-200 bg-[#c9e3fa]"
+        {/* Clue bar — sits directly above keyboard (minimalist grey) */}
+        <div className="flex items-center shrink-0 border-t border-b border-neutral-200 bg-neutral-100"
           style={{ minHeight: '56px' }}>
           <button
             onPointerDown={e => { e.preventDefault(); goToClueByIndex(activeClueIdx - 1) }}
-            className="px-3 py-2 text-neutral-700 text-2xl font-light select-none active:bg-[#a9d0ee] transition shrink-0"
+            className="px-3 py-2 text-neutral-600 text-2xl font-light select-none active:bg-neutral-200 transition shrink-0"
             style={{ WebkitTapHighlightColor: 'transparent' }}
           >
             ‹
@@ -828,18 +828,17 @@ export default function PuzzlePage() {
 
           <button
             onPointerDown={e => { e.preventDefault(); goToClueByIndex(activeClueIdx + 1) }}
-            className="px-3 py-2 text-neutral-700 text-2xl font-light select-none active:bg-[#a9d0ee] transition shrink-0"
+            className="px-3 py-2 text-neutral-600 text-2xl font-light select-none active:bg-neutral-200 transition shrink-0"
             style={{ WebkitTapHighlightColor: 'transparent' }}
           >
             ›
           </button>
         </div>
 
-        {/* Virtual keyboard — iOS-inspired */}
+        {/* Virtual keyboard — minimalist black/white/grey */}
         <div
-          className="shrink-0 pt-[8px] pb-[6px] px-[4px]"
+          className="shrink-0 pt-[8px] pb-[6px] px-[4px] bg-neutral-100 border-t border-neutral-200"
           style={{
-            background: 'linear-gradient(180deg, #d1d5db 0%, #b8bec6 100%)',
             paddingBottom: 'max(8px, env(safe-area-inset-bottom))',
           }}
         >
@@ -849,12 +848,10 @@ export default function PuzzlePage() {
               <button
                 key={k}
                 onPointerDown={e => { e.preventDefault(); handleMobileKey(k) }}
-                className="flex-1 rounded-[5px] font-medium text-neutral-900 select-none active:bg-neutral-300 transition-colors"
+                className="flex-1 rounded-[5px] font-medium text-neutral-900 bg-white border border-neutral-300 select-none active:bg-neutral-200 transition-colors"
                 style={{
                   height: '44px',
                   fontSize: '18px',
-                  background: 'linear-gradient(180deg, #ffffff 0%, #f5f5f5 100%)',
-                  boxShadow: '0 1px 0 rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.9)',
                   WebkitTapHighlightColor: 'transparent',
                 }}
               >
@@ -869,12 +866,10 @@ export default function PuzzlePage() {
               <button
                 key={k}
                 onPointerDown={e => { e.preventDefault(); handleMobileKey(k) }}
-                className="flex-1 rounded-[5px] font-medium text-neutral-900 select-none active:bg-neutral-300 transition-colors"
+                className="flex-1 rounded-[5px] font-medium text-neutral-900 bg-white border border-neutral-300 select-none active:bg-neutral-200 transition-colors"
                 style={{
                   height: '44px',
                   fontSize: '18px',
-                  background: 'linear-gradient(180deg, #ffffff 0%, #f5f5f5 100%)',
-                  boxShadow: '0 1px 0 rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.9)',
                   WebkitTapHighlightColor: 'transparent',
                 }}
               >
@@ -889,12 +884,10 @@ export default function PuzzlePage() {
               <button
                 key={k}
                 onPointerDown={e => { e.preventDefault(); handleMobileKey(k) }}
-                className="flex-1 rounded-[5px] font-medium text-neutral-900 select-none active:bg-neutral-300 transition-colors"
+                className="flex-1 rounded-[5px] font-medium text-neutral-900 bg-white border border-neutral-300 select-none active:bg-neutral-200 transition-colors"
                 style={{
                   height: '44px',
                   fontSize: '18px',
-                  background: 'linear-gradient(180deg, #ffffff 0%, #f5f5f5 100%)',
-                  boxShadow: '0 1px 0 rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.9)',
                   WebkitTapHighlightColor: 'transparent',
                 }}
               >
@@ -903,13 +896,11 @@ export default function PuzzlePage() {
             ))}
             <button
               onPointerDown={e => { e.preventDefault(); handleMobileBackspace() }}
-              className="rounded-[5px] text-neutral-800 select-none flex items-center justify-center active:brightness-90 transition"
+              className="rounded-[5px] bg-neutral-200 border border-neutral-300 text-neutral-700 select-none flex items-center justify-center active:bg-neutral-300 transition-colors"
               style={{
                 height: '44px',
                 minWidth: '48px',
                 width: '48px',
-                background: 'linear-gradient(180deg, #adb3bc 0%, #969ca6 100%)',
-                boxShadow: '0 1px 0 rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.25)',
                 WebkitTapHighlightColor: 'transparent',
               }}
               aria-label="Backspace"
