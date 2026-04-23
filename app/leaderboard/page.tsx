@@ -17,7 +17,11 @@ export default function LeaderboardPage() {
   const [friendRelations, setFriendRelations] = useState<any[]>([])
   const [loadingSearch, setLoadingSearch] = useState(false)
   const [incomingRequests, setIncomingRequests] = useState<any[]>([])
-  
+  const [reportTarget, setReportTarget] = useState<{ id: string; username: string } | null>(null)
+  const [reportReason, setReportReason] = useState('')
+  const [reportSubmitting, setReportSubmitting] = useState(false)
+  const [reportedIds, setReportedIds] = useState<string[]>([])
+
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -185,6 +189,34 @@ if (incoming.length > 0) {
     await loadFriends()
   }
 
+  async function submitReport() {
+    if (!user || !reportTarget) return
+    const reason = reportReason.trim()
+    if (!reason) {
+      alert('Please tell us what\'s wrong with this username.')
+      return
+    }
+
+    setReportSubmitting(true)
+    const { error } = await supabase.from('username_reports').insert({
+      reporter_id: user.id,
+      reported_user_id: reportTarget.id,
+      reported_username: reportTarget.username,
+      reason
+    })
+    setReportSubmitting(false)
+
+    if (error) {
+      alert('Could not submit report. Please try again.')
+      return
+    }
+
+    setReportedIds(prev => [...prev, reportTarget.id])
+    setReportTarget(null)
+    setReportReason('')
+    alert('Thanks — we\'ll review this username.')
+  }
+
   function formatTime(s: number) {
     return `${Math.floor(s / 60)
   .toString()
@@ -265,10 +297,39 @@ if (incoming.length > 0) {
         <span className="flex-1 truncate text-sm">
           {s.profiles?.username}
         </span>
-      
+
         <span className="tabular-nums w-16 text-right text-sm">
           {formatTime(s.solve_time)}
         </span>
+
+        <div className="w-6 flex justify-center ml-2">
+          {user && s.user_id !== user.id && (
+            reportedIds.includes(s.user_id) ? (
+              <span
+                className="text-xs text-neutral-400"
+                title="Reported"
+              >
+                ✓
+              </span>
+            ) : (
+              <button
+                onClick={() =>
+                  setReportTarget({
+                    id: s.user_id,
+                    username: s.profiles?.username || ''
+                  })
+                }
+                className="w-4 h-4 flex items-center justify-center
+                           text-neutral-400 text-xs
+                           hover:text-red-900 transition"
+                title="Report offensive username"
+                aria-label="Report username"
+              >
+                ⚑
+              </button>
+            )
+          )}
+        </div>
       </div>
       ))}
     </div>
@@ -439,6 +500,59 @@ if (incoming.length > 0) {
   </motion.div>
 
 </div>
+
+      {/* Report Username Modal */}
+      {reportTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+          onClick={() => !reportSubmitting && setReportTarget(null)}
+        >
+          <div
+            className="bg-white w-full max-w-md p-6 border border-neutral-300"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="text-xs tracking-[0.2em] uppercase text-neutral-500 mb-2">
+              Report Username
+            </div>
+            <div className="text-base mb-4">
+              Report{' '}
+              <span className="font-medium">
+                {reportTarget.username}
+              </span>{' '}
+              as offensive?
+            </div>
+
+            <textarea
+              value={reportReason}
+              onChange={e => setReportReason(e.target.value)}
+              placeholder="Briefly explain why (required)…"
+              rows={4}
+              maxLength={500}
+              className="w-full border border-neutral-400 px-3 py-2 text-sm outline-none focus:border-red-800 transition"
+            />
+
+            <div className="flex justify-end gap-2 mt-4">
+              <button
+                disabled={reportSubmitting}
+                onClick={() => {
+                  setReportTarget(null)
+                  setReportReason('')
+                }}
+                className="px-4 py-2 text-sm uppercase tracking-wide border border-neutral-300 hover:bg-neutral-100 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={reportSubmitting}
+                onClick={submitReport}
+                className="px-4 py-2 text-sm uppercase tracking-wide bg-red-900 text-white hover:bg-red-800 disabled:opacity-50"
+              >
+                {reportSubmitting ? 'Sending…' : 'Submit Report'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   )
