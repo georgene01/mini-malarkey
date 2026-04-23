@@ -835,22 +835,26 @@ export default function PuzzlePage() {
           </button>
         </div>
 
-        {/* Virtual keyboard */}
+        {/* Virtual keyboard — iOS-inspired */}
         <div
-          className="shrink-0 bg-[#aab4bd] pt-[6px] pb-[6px] px-[3px]"
-          style={{ paddingBottom: 'max(6px, env(safe-area-inset-bottom))' }}
+          className="shrink-0 pt-[8px] pb-[6px] px-[4px]"
+          style={{
+            background: 'linear-gradient(180deg, #d1d5db 0%, #b8bec6 100%)',
+            paddingBottom: 'max(8px, env(safe-area-inset-bottom))',
+          }}
         >
           {/* Row 1: QWERTYUIOP */}
-          <div className="flex gap-[4px] mb-[5px]">
+          <div className="flex gap-[5px] mb-[8px]">
             {'QWERTYUIOP'.split('').map(k => (
               <button
                 key={k}
                 onPointerDown={e => { e.preventDefault(); handleMobileKey(k) }}
-                className="flex-1 bg-white rounded-[6px] font-medium text-neutral-900 select-none"
+                className="flex-1 rounded-[5px] font-medium text-neutral-900 select-none active:bg-neutral-300 transition-colors"
                 style={{
-                  height: '43px',
-                  fontSize: '16px',
-                  boxShadow: '0 1px 0 1px #717d85',
+                  height: '44px',
+                  fontSize: '18px',
+                  background: 'linear-gradient(180deg, #ffffff 0%, #f5f5f5 100%)',
+                  boxShadow: '0 1px 0 rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.9)',
                   WebkitTapHighlightColor: 'transparent',
                 }}
               >
@@ -860,16 +864,17 @@ export default function PuzzlePage() {
           </div>
 
           {/* Row 2: ASDFGHJKL */}
-          <div className="flex gap-[4px] mb-[5px] px-[5%]">
+          <div className="flex gap-[5px] mb-[8px] px-[5%]">
             {'ASDFGHJKL'.split('').map(k => (
               <button
                 key={k}
                 onPointerDown={e => { e.preventDefault(); handleMobileKey(k) }}
-                className="flex-1 bg-white rounded-[6px] font-medium text-neutral-900 select-none"
+                className="flex-1 rounded-[5px] font-medium text-neutral-900 select-none active:bg-neutral-300 transition-colors"
                 style={{
-                  height: '43px',
-                  fontSize: '16px',
-                  boxShadow: '0 1px 0 1px #717d85',
+                  height: '44px',
+                  fontSize: '18px',
+                  background: 'linear-gradient(180deg, #ffffff 0%, #f5f5f5 100%)',
+                  boxShadow: '0 1px 0 rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.9)',
                   WebkitTapHighlightColor: 'transparent',
                 }}
               >
@@ -879,16 +884,17 @@ export default function PuzzlePage() {
           </div>
 
           {/* Row 3: ZXCVBNM + ⌫ */}
-          <div className="flex gap-[4px] px-[2%]">
+          <div className="flex gap-[5px] px-[2%]">
             {'ZXCVBNM'.split('').map(k => (
               <button
                 key={k}
                 onPointerDown={e => { e.preventDefault(); handleMobileKey(k) }}
-                className="flex-1 bg-white rounded-[6px] font-medium text-neutral-900 select-none"
+                className="flex-1 rounded-[5px] font-medium text-neutral-900 select-none active:bg-neutral-300 transition-colors"
                 style={{
-                  height: '43px',
-                  fontSize: '16px',
-                  boxShadow: '0 1px 0 1px #717d85',
+                  height: '44px',
+                  fontSize: '18px',
+                  background: 'linear-gradient(180deg, #ffffff 0%, #f5f5f5 100%)',
+                  boxShadow: '0 1px 0 rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.9)',
                   WebkitTapHighlightColor: 'transparent',
                 }}
               >
@@ -897,18 +903,22 @@ export default function PuzzlePage() {
             ))}
             <button
               onPointerDown={e => { e.preventDefault(); handleMobileBackspace() }}
-              className="bg-[#8e979e] rounded-[6px] text-neutral-800 select-none flex items-center justify-center"
+              className="rounded-[5px] text-neutral-800 select-none flex items-center justify-center active:brightness-90 transition"
               style={{
-                height: '43px',
-                minWidth: '44px',
-                width: '44px',
-                fontSize: '19px',
-                boxShadow: '0 1px 0 1px #717d85',
+                height: '44px',
+                minWidth: '48px',
+                width: '48px',
+                background: 'linear-gradient(180deg, #adb3bc 0%, #969ca6 100%)',
+                boxShadow: '0 1px 0 rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.25)',
                 WebkitTapHighlightColor: 'transparent',
               }}
               aria-label="Backspace"
             >
-              ⌫
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/>
+                <line x1="18" y1="9" x2="12" y2="15"/>
+                <line x1="12" y1="9" x2="18" y2="15"/>
+              </svg>
             </button>
           </div>
         </div>
