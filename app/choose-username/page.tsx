@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/src/lib/supabase'
 import { useRouter } from 'next/navigation'
-import { isUsernameProfane } from '@/src/lib/usernameModeration'
+import { validateUsername } from '@/src/lib/usernameModeration'
 
 export default function ChooseUsername() {
   const [username, setUsername] = useState('')
@@ -59,30 +59,16 @@ export default function ChooseUsername() {
 
   async function saveUsername() {
     if (!user) return
-  
+
     const clean = username.toLowerCase().trim()
-  
-    if (!clean) {
-      alert('Enter a username')
+
+    // Run full validation (length + charset + profanity including SA slurs)
+    const err = validateUsername(clean)
+    if (err) {
+      alert(err)
       return
     }
-  
-    if (clean.length < 3) {
-      alert('Username must be at least 3 characters')
-      return
-    }
-  
-    if (!/^[a-z0-9._]+$/.test(clean)) {
-      alert('Only lowercase letters, numbers, dots and underscores allowed')
-      return
-    }
-  
-    // ✅ PROFANITY CHECK GOES RIGHT HERE
-    if (isUsernameProfane(clean)) {
-      alert('That username is not allowed')
-      return
-    }
-  
+
     const { error } = await supabase
       .from('profiles')
       .insert({

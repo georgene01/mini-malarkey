@@ -6,9 +6,14 @@ import { useRouter } from 'next/navigation'
 import { RotateCcw } from 'lucide-react'
 import Image from 'next/image'
 
+/* ─────────────────────────────────────────────────────────────
+   Types
+───────────────────────────────────────────────────────────── */
+
 type Puzzle = {
   grid: string[][]
-  shaded?: boolean[][]   // 👈 NEW
+  shaded?: boolean[][]
+  circled?: boolean[][]
   clues: {
     across: Record<string, string>
     down: Record<string, string>
@@ -25,265 +30,225 @@ type NumberedCell = {
   startsDown: boolean
 }
 
-type Score = { time: number; date: string }
+/* ─────────────────────────────────────────────────────────────
+   Pure utilities (outside component)
+───────────────────────────────────────────────────────────── */
 
-export default function HomePage() {
+function generateNumbers(grid: string[][]): NumberedCell[][] {
+  let count = 1
+  const rows = grid.length
+  const cols = grid[0].length
+  return grid.map((row, r) =>
+    row.map((cell, c) => {
+      if (cell === '#') return { startsAcross: false, startsDown: false }
+      const startsAcross =
+        (c === 0 || row[c - 1] === '#') && c + 1 < cols && row[c + 1] !== '#'
+      const startsDown =
+        (r === 0 || grid[r - 1][c] === '#') && r + 1 < rows && grid[r + 1][c] !== '#'
+      return {
+        number: startsAcross || startsDown ? count++ : undefined,
+        startsAcross,
+        startsDown,
+      }
+    })
+  )
+}
 
-  const [showCompletionOverlay, setShowCompletionOverlay] = useState(false)
-  const [isMobile, setIsMobile] = useState(false)
+function findStart(num: number, numbers: NumberedCell[][]): Pos {
+  for (let r = 0; r < numbers.length; r++)
+    for (let c = 0; c < numbers[r].length; c++)
+      if (numbers[r][c].number === num) return { row: r, col: c }
+  return { row: 0, col: 0 }
+}
+
+function getAvailableDirections(row: number, col: number, puzzle: Puzzle) {
+  const rows = puzzle.grid.length
+  const cols = puzzle.grid[0].length
+  const isBlk = (r: number, c: number) =>
+    r < 0 || c < 0 || r >= rows || c >= cols || puzzle.grid[r][c] === '#'
+  return {
+    across: !isBlk(row, col - 1) || !isBlk(row, col + 1),
+    down: !isBlk(row - 1, col) || !isBlk(row + 1, col),
+  }
+}
+
+function formatTime(s: number) {
+  return `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60)
+    .toString()
+    .padStart(2, '0')}`
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Component
+───────────────────────────────────────────────────────────── */
+
+export default function PuzzlePage() {
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null)
   const [userGrid, setUserGrid] = useState<string[][]>([])
   const [numbers, setNumbers] = useState<NumberedCell[][]>([])
   const [active, setActive] = useState<Pos>({ row: 0, col: 0 })
   const [direction, setDirection] = useState<Direction>('across')
-
   const [user, setUser] = useState<any>(null)
-  const router = useRouter()
-
   const [username, setUsername] = useState<string | null>(null)
-
-  const [isReplayMode, setIsReplayMode] = useState(false)
-
-  const [showChickenSplash, setShowChickenSplash] = useState(false)
-  const [startWipe, setStartWipe] = useState(false)
-  
   const [isComplete, setIsComplete] = useState(false)
+  const [isReplayMode, setIsReplayMode] = useState(false)
   const [almostMessage, setAlmostMessage] = useState<string | null>(null)
-
   const [seconds, setSeconds] = useState(0)
   const [timerRunning, setTimerRunning] = useState(false)
+  const [showChickenSplash, setShowChickenSplash] = useState(false)
+  const [startWipe, setStartWipe] = useState(false)
+  const [showCompletionOverlay, setShowCompletionOverlay] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+
   const timerRef = useRef<number | null>(null)
-
+  const secondsRef = useRef(0)
   const inputs = useRef<(HTMLInputElement | null)[][]>([])
+  const router = useRouter()
 
+  /* ── Auth ──────────────────────────────────────────────── */
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(({ data }) =>
       setUser(data.session?.user ?? null)
-    })
-  
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setUser(session?.user ?? null)
-      }
     )
-  
-    return () => {
-      listener.subscription.unsubscribe()
-    }
-  }, [])
-
-  useEffect(() => {
-    const check = () => {
-      setIsMobile(window.innerWidth < 768)
-    }
-  
-    check()
-    window.addEventListener('resize', check)
-  
-    return () => window.removeEventListener('resize', check)
-  }, [])
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-  
-    const img = document.createElement('img')
-    img.src = '/chicken.png'
-  }, [])
-
-  useEffect(() => {
-    setShowChickenSplash(false)
-    setStartWipe(false)
+    const { data: listener } = supabase.auth.onAuthStateChange((_e, session) =>
+      setUser(session?.user ?? null)
+    )
+    return () => listener.subscription.unsubscribe()
   }, [])
 
   useEffect(() => {
     if (!user) return
-  
-    async function loadUsername() {
-      const { data } = await supabase
-        .from('profiles')
-        .select('username')
-        .eq('id', user.id)
-        .single()
-  
-      if (data) setUsername(data.username)
-    }
-  
-    loadUsername()
+    supabase
+      .from('profiles')
+      .select('username')
+      .eq('id', user.id)
+      .single()
+      .then(({ data }) => { if (data) setUsername(data.username) })
   }, [user])
 
   useEffect(() => {
-    async function checkProfile() {
-      if (!user) return
-  
-      const { data } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', user.id)
-        .single()
-  
-      if (!data) {
-        router.push('/choose-username')
-      }
-    }
-  
-    checkProfile()
+    if (!user) return
+    supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', user.id)
+      .single()
+      .then(({ data }) => { if (!data) router.push('/choose-username') })
   }, [user])
 
-
+  /* ── Responsive ──────────────────────────────────────── */
   useEffect(() => {
-    if (!user || !puzzle) return
-  
-    const currentPuzzle = puzzle
-  
-    async function checkExistingSolve() {
-      const today = new Date().toISOString().split('T')[0]
-  
-      const { data } = await supabase
-        .from('solves')
-        .select('solve_time')
-        .eq('user_id', user.id)
-        .eq('puzzle_date', today)
-        .maybeSingle()
-  
-      if (data && currentPuzzle) {
-        setSeconds(data.solve_time)
-        setIsComplete(true)
-        setTimerRunning(false)
-  
-        // Restore solved grid safely
-        setUserGrid(
-          currentPuzzle.grid.map(row =>
-            row.map(c => (c === '#' ? '#' : c))
-          )
-        )
-      }
-    }
-  
-    checkExistingSolve()
-  }, [user, puzzle])
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
 
-  /* ================= LOAD ================= */
-
+  /* ── Load puzzle ─────────────────────────────────────── */
   useEffect(() => {
     fetch('/api/today')
       .then(r => r.json())
       .then(data => {
+        if (data.error) return
         setPuzzle(data)
         setUserGrid(
           data.grid.map((row: string[]) =>
-            row.map(c => (c === '#' ? '#' : ''))
+            row.map((c: string) => (c === '#' ? '#' : ''))
           )
         )
         setNumbers(generateNumbers(data.grid))
-        inputs.current = Array.from(
-          { length: data.grid.length },
-          () => Array(data.grid[0].length).fill(null)
-        )
+        inputs.current = data.grid.map((row: string[]) => row.map(() => null))
       })
   }, [])
 
+  /* ── Check existing solve ────────────────────────────── */
   useEffect(() => {
-    const el = inputs.current?.[active.row]?.[active.col]
-    if (el) {
-      el.focus()
-  
-      // Select entire content so typing replaces it
-      const length = el.value.length
-      el.setSelectionRange(0, length)
-    }
-  }, [active])
+    if (!user || !puzzle) return
+    const today = new Date().toISOString().split('T')[0]
+    supabase
+      .from('solves')
+      .select('solve_time')
+      .eq('user_id', user.id)
+      .eq('puzzle_date', today)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data && puzzle) {
+          secondsRef.current = data.solve_time
+          setSeconds(data.solve_time)
+          setIsComplete(true)
+          setTimerRunning(false)
+          setUserGrid(
+            puzzle.grid.map(row => row.map(c => (c === '#' ? '#' : c)))
+          )
+        }
+      })
+  }, [user, puzzle])
 
+  /* ── Timer ───────────────────────────────────────────── */
   useEffect(() => {
     if (timerRunning && !isComplete) {
       timerRef.current = window.setInterval(() => {
-        setSeconds(s => s + 1)
+        setSeconds(s => {
+          const next = s + 1
+          secondsRef.current = next
+          return next
+        })
       }, 1000)
-    } else if (timerRef.current) {
-      clearInterval(timerRef.current)
-    }
-
-    return () => {
+    } else {
       if (timerRef.current) clearInterval(timerRef.current)
     }
+    return () => { if (timerRef.current) clearInterval(timerRef.current) }
   }, [timerRunning, isComplete])
 
-  if (!puzzle) return null
+  /* ── Focus desktop inputs ────────────────────────────── */
+  useEffect(() => {
+    if (isMobile) return
+    const el = inputs.current?.[active.row]?.[active.col]
+    if (el) {
+      el.focus()
+      el.setSelectionRange(0, el.value.length)
+    }
+  }, [active, isMobile])
+
+  /* ── Pre-load chicken ────────────────────────────────── */
+  useEffect(() => {
+    const img = document.createElement('img')
+    img.src = '/chicken.png'
+  }, [])
+
+  /* ── Loading state ───────────────────────────────────── */
+  if (!puzzle) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-white">
+        <div className="text-neutral-400 text-sm tracking-widest uppercase animate-pulse">
+          Loading…
+        </div>
+      </div>
+    )
+  }
+
   const rows = puzzle.grid.length
   const cols = puzzle.grid[0].length
 
-  /* ================= CORE HELPERS ================= */
+  /* ─────────────────────────────────────────────────────────
+     Grid helpers (use puzzle/rows/cols from outer scope)
+  ───────────────────────────────────────────────────────── */
 
   const isBlack = (r: number, c: number) =>
     r < 0 || c < 0 || r >= rows || c >= cols || puzzle.grid[r][c] === '#'
 
-  const getWordStart = (pos: Pos, dir: Direction) => {
+  const getWordStart = (pos: Pos, dir: Direction): Pos => {
     let { row: r, col: c } = pos
     while (true) {
-      const prevR = dir === 'across' ? r : r - 1
-      const prevC = dir === 'across' ? c - 1 : c
-      if (isBlack(prevR, prevC)) break
+      const pr = dir === 'across' ? r : r - 1
+      const pc = dir === 'across' ? c - 1 : c
+      if (isBlack(pr, pc)) break
       dir === 'across' ? c-- : r--
     }
     return { row: r, col: c }
   }
 
-  const getPreviousClueEnd = (
-    grid: string[][],
-    wordStart: Pos,
-    dir: Direction
-  ) => {
-    const collectClues = (directionToCollect: Direction) => {
-      const list: { num: number; pos: Pos }[] = []
-  
-      for (let r = 0; r < numbers.length; r++) {
-        for (let c = 0; c < numbers[r].length; c++) {
-          const cell = numbers[r][c]
-          if (!cell.number) continue
-  
-          if (
-            (directionToCollect === 'across' && cell.startsAcross) ||
-            (directionToCollect === 'down' && cell.startsDown)
-          ) {
-            list.push({
-              num: cell.number,
-              pos: { row: r, col: c }
-            })
-          }
-        }
-      }
-  
-      return list
-    }
-  
-    const clueList = collectClues(dir)
-  
-    const currentNumber =
-      numbers[wordStart.row][wordStart.col].number
-  
-    const idx = clueList.findIndex(c => c.num === currentNumber)
-  
-    if (idx > 0) {
-      const prevStart = clueList[idx - 1].pos
-      const cells = getWordCells(prevStart, dir)
-      return cells[cells.length - 1]
-    }
-    
-    // 🔁 Wrap to opposite direction LAST clue
-    const opposite: Direction =
-      dir === 'across' ? 'down' : 'across'
-    
-    const oppositeList = collectClues(opposite)
-    
-    if (!oppositeList.length) return null
-    
-    const lastOpposite = oppositeList[oppositeList.length - 1]
-    const cells = getWordCells(lastOpposite.pos, opposite)
-    
-    return cells[cells.length - 1]
-  
-  }
-
-  const getWordCells = (start: Pos, dir: Direction) => {
+  const getWordCells = (start: Pos, dir: Direction): Pos[] => {
     const cells: Pos[] = []
     let { row: r, col: c } = start
     while (!isBlack(r, c)) {
@@ -293,324 +258,239 @@ export default function HomePage() {
     return cells
   }
 
+  const collectClues = (dir: Direction): { num: number; pos: Pos }[] => {
+    const list: { num: number; pos: Pos }[] = []
+    for (let r = 0; r < numbers.length; r++)
+      for (let c = 0; c < numbers[r].length; c++) {
+        const cell = numbers[r][c]
+        if (!cell?.number) continue
+        if (dir === 'across' ? cell.startsAcross : cell.startsDown)
+          list.push({ num: cell.number, pos: { row: r, col: c } })
+      }
+    return list
+  }
+
   const moveForward = (
     pos: Pos,
     dir: Direction,
     grid: string[][],
     wasEmpty: boolean
-  ) => {
+  ): Pos | null => {
     const start = getWordStart(pos, dir)
     const cells = getWordCells(start, dir)
-  
-    const index = cells.findIndex(
-      p => p.row === pos.row && p.col === pos.col
-    )
-  
+    const idx = cells.findIndex(p => p.row === pos.row && p.col === pos.col)
+
     if (wasEmpty) {
-      // 1️⃣ Scan forward
-      for (let i = index + 1; i < cells.length; i++) {
-        const { row, col } = cells[i]
-        if (!grid[row][col]) {
-          return cells[i]
-        }
-      }
-  
-      // 2️⃣ Scan entire word for ANY remaining blank
-      for (let i = 0; i < cells.length; i++) {
-        const { row, col } = cells[i]
-        if (!grid[row][col]) {
-          return cells[i]
-        }
-      }
-  
-      // 3️⃣ Word fully filled
+      for (let i = idx + 1; i < cells.length; i++)
+        if (!grid[cells[i].row][cells[i].col]) return cells[i]
+      for (let i = 0; i < cells.length; i++)
+        if (!grid[cells[i].row][cells[i].col]) return cells[i]
       return null
     }
-  
-    // Editing a filled square → move sequentially
-    if (index < cells.length - 1) {
-      return cells[index + 1]
-    }
-  
-    return null
-  }
-
-  const moveBackward = (pos: Pos, dir: Direction) => {
-    const start = getWordStart(pos, dir)
-    const cells = getWordCells(start, dir)
-    const index = cells.findIndex(
-      p => p.row === pos.row && p.col === pos.col
-    )
-    return cells[index - 1] ?? null
+    return idx < cells.length - 1 ? cells[idx + 1] : null
   }
 
   const getNextClueStart = (
     grid: string[][],
     wordStart: Pos,
     dir: Direction
-  ) => {
-    const collectClues = (directionToCollect: Direction) => {
-      const list: { num: number; pos: Pos }[] = []
-  
-      for (let r = 0; r < numbers.length; r++) {
-        for (let c = 0; c < numbers[r].length; c++) {
-          const cell = numbers[r][c]
-          if (!cell.number) continue
-  
-          if (
-            (directionToCollect === 'across' && cell.startsAcross) ||
-            (directionToCollect === 'down' && cell.startsDown)
-          ) {
-            list.push({
-              num: cell.number,
-              pos: { row: r, col: c }
-            })
-          }
-        }
-      }
-  
-      return list
-    }
-  
-    const clueList = collectClues(dir)
-  
-    const currentNumber =
-      numbers[wordStart.row][wordStart.col].number
-  
-    const idx = clueList.findIndex(c => c.num === currentNumber)
-  
-    // Not last clue in direction
-    if (idx !== -1 && idx < clueList.length - 1) {
-      const nextStart = clueList[idx + 1].pos
-      const cells = getWordCells(nextStart, dir)
+  ): { pos: Pos; newDir: Direction } | null => {
+    const clues = collectClues(dir)
+    const currentNum = numbers[wordStart.row]?.[wordStart.col]?.number
+    const idx = clues.findIndex(c => c.num === currentNum)
+
+    if (idx !== -1 && idx < clues.length - 1) {
+      const next = clues[idx + 1]
+      const cells = getWordCells(next.pos, dir)
       const firstEmpty = cells.find(p => !grid[p.row][p.col])
       return { pos: firstEmpty ?? cells[0], newDir: dir }
     }
-  
-    // If last clue → switch direction
-    const opposite: Direction =
-  dir === 'across' ? 'down' : 'across'
 
-const oppositeList = collectClues(opposite)
-if (!oppositeList.length) return null
-
-// Find first clue that is not fully filled
-for (const clue of oppositeList) {
-  const cells = getWordCells(clue.pos, opposite)
-  const hasEmpty = cells.some(
-    p => !grid[p.row][p.col]
-  )
-
-  if (hasEmpty) {
-    const firstEmpty = cells.find(
-      p => !grid[p.row][p.col]
-    )
-
-    return {
-      pos: firstEmpty ?? cells[0],
-      newDir: opposite
+    const opp: Direction = dir === 'across' ? 'down' : 'across'
+    const oppClues = collectClues(opp)
+    for (const clue of oppClues) {
+      const cells = getWordCells(clue.pos, opp)
+      const firstEmpty = cells.find(p => !grid[p.row][p.col])
+      if (firstEmpty) return { pos: firstEmpty, newDir: opp }
     }
+    if (oppClues.length) {
+      return { pos: getWordCells(oppClues[0].pos, opp)[0], newDir: opp }
+    }
+    return null
   }
-}
 
-// If no clues in opposite direction have empties,
-// scan entire grid for next empty square
+  const getPreviousClueEnd = (wordStart: Pos, dir: Direction): Pos | null => {
+    const clues = collectClues(dir)
+    const currentNum = numbers[wordStart.row]?.[wordStart.col]?.number
+    const idx = clues.findIndex(c => c.num === currentNum)
 
-// 🔁 If all opposite clues are filled,
-// wrap to FIRST opposite clue (true circular behavior)
-
-const firstOpposite = oppositeList[0]
-const cells = getWordCells(firstOpposite.pos, opposite)
-
-return {
-  pos: cells[0],
-  newDir: opposite
-}
-
-// Nothing empty anywhere
-return null
+    if (idx > 0) {
+      const cells = getWordCells(clues[idx - 1].pos, dir)
+      return cells[cells.length - 1]
+    }
+    const opp: Direction = dir === 'across' ? 'down' : 'across'
+    const oppClues = collectClues(opp)
+    if (!oppClues.length) return null
+    const cells = getWordCells(oppClues[oppClues.length - 1].pos, opp)
+    return cells[cells.length - 1]
   }
 
   const isAllFilled = (grid: string[][]) =>
     grid.every((row, r) =>
-      row.every((cell, c) =>
-        puzzle.grid[r][c] === '#' ? true : cell !== ''
-      )
+      row.every((cell, c) => (puzzle.grid[r][c] === '#' ? true : cell !== ''))
     )
 
   const checkSolution = (grid: string[][]) => {
-    for (let r = 0; r < rows; r++) {
+    for (let r = 0; r < rows; r++)
       for (let c = 0; c < cols; c++) {
         if (puzzle.grid[r][c] === '#') continue
         if (grid[r][c] !== puzzle.grid[r][c]) return false
       }
-    }
     return true
   }
 
+  /* ─────────────────────────────────────────────────────────
+     Completion
+  ───────────────────────────────────────────────────────── */
+
+  async function triggerCompletion() {
+    setIsComplete(true)
+    setTimerRunning(false)
+
+    const today = new Date().toISOString().split('T')[0]
+    if (user && !isReplayMode) {
+      const { data: existing } = await supabase
+        .from('solves')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('puzzle_date', today)
+        .maybeSingle()
+
+      if (!existing) {
+        await supabase.from('solves').insert({
+          user_id: user.id,
+          puzzle_date: today,
+          solve_time: secondsRef.current,
+        })
+      }
+    }
+
+    setShowChickenSplash(true)
+    setTimeout(() => setStartWipe(true), 350)
+    setTimeout(() => {
+      setShowChickenSplash(false)
+      setShowCompletionOverlay(true)
+    }, 2000)
+  }
+
+  /* ─────────────────────────────────────────────────────────
+     Replay
+  ───────────────────────────────────────────────────────── */
+
   function handleReplay() {
+    if (!puzzle) return
     setIsReplayMode(true)
     setIsComplete(false)
     setSeconds(0)
+    secondsRef.current = 0
     setTimerRunning(false)
-  
-    if (!puzzle) return
-  
-    setUserGrid(
-      puzzle.grid.map(row =>
-        row.map(c => (c === '#' ? '#' : ''))
-      )
-    )
+    setShowCompletionOverlay(false)
+    setAlmostMessage(null)
+    setActive({ row: 0, col: 0 })
+    setDirection('across')
+    setUserGrid(puzzle.grid.map(row => row.map(c => (c === '#' ? '#' : ''))))
   }
-  /* ================= INPUT ================= */
+
+  /* ─────────────────────────────────────────────────────────
+     Backspace (shared by desktop keyboard & mobile key)
+  ───────────────────────────────────────────────────────── */
+
+  function performBackspace(r: number, c: number) {
+    if (isComplete && !isReplayMode) return
+    const g = structuredClone(userGrid) as string[][]
+    const wordStart = getWordStart({ row: r, col: c }, direction)
+    const cells = getWordCells(wordStart, direction)
+    const idx = cells.findIndex(p => p.row === r && p.col === c)
+
+    if (g[r][c]) {
+      g[r][c] = ''
+      setUserGrid(g)
+    } else if (idx > 0) {
+      const prev = cells[idx - 1]
+      g[prev.row][prev.col] = ''
+      setUserGrid(g)
+      setActive(prev)
+    } else {
+      const prevEnd = getPreviousClueEnd(wordStart, direction)
+      if (prevEnd) setActive(prevEnd)
+    }
+  }
+
+  /* ─────────────────────────────────────────────────────────
+     Cell tap (toggles direction on re-tap — NYT behaviour)
+  ───────────────────────────────────────────────────────── */
+
+  function handleCellTap(r: number, c: number) {
+    if (!puzzle) return
+    if (puzzle.grid[r][c] === '#') return
+    const isSameCell = active.row === r && active.col === c
+    const { across, down } = getAvailableDirections(r, c, puzzle)
+
+    if (isSameCell) {
+      if (across && down) setDirection(d => (d === 'across' ? 'down' : 'across'))
+    } else {
+      if (across && !down) setDirection('across')
+      else if (!across && down) setDirection('down')
+    }
+    setActive({ row: r, col: c })
+  }
+
+  /* ─────────────────────────────────────────────────────────
+     Keyboard handlers
+  ───────────────────────────────────────────────────────── */
 
   async function handleChange(r: number, c: number, raw: string) {
-    if (isComplete) return
-  
-    const letter = raw.toUpperCase().slice(-1)
+    if (isComplete && !isReplayMode) return
+    const letter = raw.toUpperCase().replace(/[^A-Z]/g, '').slice(-1)
     if (!letter) return
-  
     if (!timerRunning) setTimerRunning(true)
-  
-      const g = structuredClone(userGrid)
 
-      // Capture whether this cell was empty BEFORE typing
-      const wasEmpty = !g[r][c]
-      
-      // Capture word start BEFORE movement
-      const currentWordStart = getWordStart(
-        { row: r, col: c },
-        direction
-      )
-      
-      g[r][c] = letter
-      setUserGrid(g)
-      setAlmostMessage(null)
-      
-      const next = moveForward(
-        { row: r, col: c },
-        direction,
-        g,
-        wasEmpty
-      )
-  
-      if (next) {
-        setActive(next)
-      } else {
-        const jump = getNextClueStart(g, currentWordStart, direction)
+    const g = structuredClone(userGrid) as string[][]
+    const wasEmpty = !g[r][c]
+    const wordStart = getWordStart({ row: r, col: c }, direction)
 
-if (jump) {
-  setActive(jump.pos)
+    g[r][c] = letter
+    setUserGrid(g)
+    setAlmostMessage(null)
 
-  if (jump.newDir) {
-    setDirection(jump.newDir)
-  }
-}
+    const next = moveForward({ row: r, col: c }, direction, g, wasEmpty)
+    if (next) {
+      setActive(next)
+    } else {
+      const jump = getNextClueStart(g, wordStart, direction)
+      if (jump) {
+        setActive(jump.pos)
+        setDirection(jump.newDir)
       }
-  
+    }
+
     if (isAllFilled(g)) {
-
       if (checkSolution(g)) {
-    
-        setIsComplete(true)
-        setTimerRunning(false)
-    
-        const today = new Date().toISOString().split('T')[0]
-    
-        if (user && !isReplayMode) {
-          const { data: existing } = await supabase
-            .from('solves')
-            .select('id')
-            .eq('user_id', user.id)
-            .eq('puzzle_date', today)
-            .maybeSingle()
-    
-          if (!existing) {
-            await supabase.from('solves').insert({
-              user_id: user.id,
-              puzzle_date: today,
-              solve_time: seconds
-            })
-          }
-        }
-    
-        setShowChickenSplash(true)
-    
-        setTimeout(() => {
-          setStartWipe(true)
-        }, 300)
-    
-        setTimeout(() => {
-          setShowChickenSplash(false)
-          setShowCompletionOverlay(true)
-        }, 2000)
-    
+        await triggerCompletion()
       } else {
-        setAlmostMessage(
-          "Almost! You're almost there — something is filled in incorrectly."
-        )
+        setAlmostMessage("Almost! Check your answers — something isn't quite right.")
       }
-    
-    }}
-
-
-    function handleMobileKey(letter: string) {
-      requestAnimationFrame(() => {
-  handleChange(active.row, active.col, letter)
-})
     }
-    
+  }
 
-    function handleMobileBackspace() {
-      const fakeEvent = {
-        key: 'Backspace',
-        preventDefault: () => {}
-      } as any
-    
-      handleKeyDown(fakeEvent, active.row, active.col)
-    }
   function handleKeyDown(e: React.KeyboardEvent, r: number, c: number) {
-    if (isComplete) return
+    if (isComplete && !isReplayMode) return
 
     if (e.key === 'Backspace') {
-  e.preventDefault()
-
-  const g = structuredClone(userGrid)
-
-  const currentWordStart = getWordStart(
-    { row: r, col: c },
-    direction
-  )
-
-  const cells = getWordCells(currentWordStart, direction)
-  const index = cells.findIndex(
-    p => p.row === r && p.col === c
-  )
-
-  if (g[r][c]) {
-    // If letter exists → delete it
-    g[r][c] = ''
-    setUserGrid(g)
-  } else {
-    // If empty and NOT first cell → move backward inside word
-    if (index > 0) {
-      setActive(cells[index - 1])
-    } else {
-      // Empty and first cell → jump to previous clue
-      const prevEnd = getPreviousClueEnd(
-        g,
-        currentWordStart,
-        direction
-      )
-
-      if (prevEnd) {
-        setActive(prevEnd)
-      }
+      e.preventDefault()
+      performBackspace(r, c)
+      return
     }
-  }
-
-  return
-}
 
     if (e.key === ' ') {
       e.preventDefault()
@@ -620,709 +500,568 @@ if (jump) {
 
     if (e.key.startsWith('Arrow')) {
       e.preventDefault()
+      const { row: nr, col: nc } = active
 
-      let { row, col } = active
+      if (e.key === 'ArrowRight') {
+        if (direction === 'across') {
+          let nc2 = nc + 1
+          while (nc2 < cols && isBlack(nr, nc2)) nc2++
+          if (nc2 < cols) setActive({ row: nr, col: nc2 })
+        } else { setDirection('across') }
 
-      if (e.key === 'ArrowRight') col++
-      if (e.key === 'ArrowLeft') col--
-      if (e.key === 'ArrowDown') row++
-      if (e.key === 'ArrowUp') row--
+      } else if (e.key === 'ArrowLeft') {
+        if (direction === 'across') {
+          let nc2 = nc - 1
+          while (nc2 >= 0 && isBlack(nr, nc2)) nc2--
+          if (nc2 >= 0) setActive({ row: nr, col: nc2 })
+        } else { setDirection('across') }
 
-      if (!isBlack(row, col)) {
-        setActive({ row, col })
-      } else {
-        // wrap to next clue
-        const currentWordStart = getWordStart(active, direction)
-        const jump = getNextClueStart(userGrid, currentWordStart, direction)
-        if (jump) {
-          setActive(jump.pos)
-          if (jump.newDir) setDirection(jump.newDir)
-        }
+      } else if (e.key === 'ArrowDown') {
+        if (direction === 'down') {
+          let nr2 = nr + 1
+          while (nr2 < rows && isBlack(nr2, nc)) nr2++
+          if (nr2 < rows) setActive({ row: nr2, col: nc })
+        } else { setDirection('down') }
+
+      } else if (e.key === 'ArrowUp') {
+        if (direction === 'down') {
+          let nr2 = nr - 1
+          while (nr2 >= 0 && isBlack(nr2, nc)) nr2--
+          if (nr2 >= 0) setActive({ row: nr2, col: nc })
+        } else { setDirection('down') }
       }
     }
-
   }
 
-  /* ================= RENDER ================= */
+  /* Mobile keyboard */
+  function handleMobileKey(letter: string) {
+    handleChange(active.row, active.col, letter)
+  }
 
-  const activeWord = getWordCells(
-    getWordStart(active, direction),
-    direction
-  )
+  function handleMobileBackspace() {
+    performBackspace(active.row, active.col)
+  }
 
+  /* ─────────────────────────────────────────────────────────
+     Derived clue values
+  ───────────────────────────────────────────────────────── */
+
+  const activeWord = getWordCells(getWordStart(active, direction), direction)
   const activeStart = getWordStart(active, direction)
-  const activeClueNumber =
-    numbers[activeStart.row][activeStart.col]?.number
+  const activeClueNumber = numbers[activeStart.row]?.[activeStart.col]?.number
 
-  const formatTime = (s: number) =>
-    `${Math.floor(s / 60)
-      .toString()
-      .padStart(2, '0')}:${(s % 60)
-      .toString()
-      .padStart(2, '0')}`
+  const acrossClues = Object.entries(puzzle.clues.across)
+    .map(([num, clue]) => ({ num: Number(num), clue }))
+    .sort((a, b) => a.num - b.num)
 
-      const acrossClues = Object.entries(puzzle!.clues.across)
-  .map(([num, clue]) => ({
-    num: Number(num),
-    clue
-  }))
-  .sort((a, b) => a.num - b.num)
+  const downClues = Object.entries(puzzle.clues.down)
+    .map(([num, clue]) => ({ num: Number(num), clue }))
+    .sort((a, b) => a.num - b.num)
 
-const downClues = Object.entries(puzzle!.clues.down)
-  .map(([num, clue]) => ({
-    num: Number(num),
-    clue
-  }))
-  .sort((a, b) => a.num - b.num)
+  const activeClueList = direction === 'across' ? acrossClues : downClues
+  const activeClueIdx = activeClueList.findIndex(c => c.num === activeClueNumber)
+  const activeClueText = activeClueIdx !== -1 ? activeClueList[activeClueIdx].clue : ''
 
-  const activeClueList =
-  direction === 'across' ? acrossClues : downClues
+  function goToClueByIndex(index: number) {
+    let newDir = direction
+    let clues = activeClueList
+    if (index < 0) {
+      newDir = direction === 'across' ? 'down' : 'across'
+      clues = newDir === 'across' ? acrossClues : downClues
+      index = clues.length - 1
+    } else if (index >= clues.length) {
+      newDir = direction === 'across' ? 'down' : 'across'
+      clues = newDir === 'across' ? acrossClues : downClues
+      index = 0
+    }
+    const clue = clues[index]
+    if (!clue) return
+    setDirection(newDir)
+    setActive(findStart(clue.num, numbers))
+  }
 
-const activeClueIndex = activeClueList.findIndex(
-  c => c.num === activeClueNumber
-)
+  /* ─────────────────────────────────────────────────────────
+     Cell renderer
+  ───────────────────────────────────────────────────────── */
 
-const activeClueText =
-  activeClueIndex !== -1
-    ? activeClueList[activeClueIndex].clue
-    : ''
+  function renderCell(r: number, c: number, forMobile: boolean) {
+    if (!puzzle) return null
+    const cell = puzzle.grid[r][c]
+    const inWord = activeWord.some(p => p.row === r && p.col === c)
+    const isActive = active.row === r && active.col === c
+    const isShaded = puzzle.shaded?.[r]?.[c]
+    const isCircled = puzzle.circled?.[r]?.[c]
+    const num = numbers[r]?.[c]?.number
 
-    function goToClueByIndex(index: number) {
-      let newDirection = direction
-      let clueList = activeClueList
-    
-      // 🔁 Wrap backward
-      if (index < 0) {
-        newDirection = direction === 'across' ? 'down' : 'across'
-        clueList =
-          newDirection === 'across' ? acrossClues : downClues
-        index = clueList.length - 1
-      }
-    
-      // 🔁 Wrap forward
-      if (index >= clueList.length) {
-        newDirection = direction === 'across' ? 'down' : 'across'
-        clueList =
-          newDirection === 'across' ? acrossClues : downClues
-        index = 0
-      }
-    
-      const clue = clueList[index]
-      const start = findStart(clue.num, numbers)
-    
-      setDirection(newDirection)
-      setActive(start)
+    if (cell === '#') {
+      return <div key={`${r}-${c}`} className="aspect-square bg-neutral-900" />
     }
 
-      function renderGrid() {
-        return (
+    const bgClass = isActive
+      ? 'bg-red-300'
+      : inWord
+      ? 'bg-red-100'
+      : isShaded
+      ? 'bg-neutral-300'
+      : 'bg-white'
+
+    return (
+      <div
+        key={`${r}-${c}`}
+        className={`relative aspect-square border border-neutral-400 ${bgClass} overflow-hidden`}
+        onClick={forMobile ? () => handleCellTap(r, c) : undefined}
+      >
+        {/* Clue number */}
+        {num !== undefined && (
+          <span
+            className="absolute top-px left-px font-semibold leading-none select-none text-neutral-700 pointer-events-none z-10"
+            style={{ fontSize: 'clamp(7px, 1.8vw, 10px)' }}
+          >
+            {num}
+          </span>
+        )}
+
+        {/* Circle overlay */}
+        {isCircled && (
           <div
-  className="grid gap-1 w-full max-w-[420px] md:w-auto mx-auto"
-  style={{
-    gridTemplateColumns: `repeat(${cols}, 1fr)`
-  }}
->
-            {puzzle!.grid.map((row, r) =>
-              row.map((cell, c) => {
-                const inWord = activeWord.some(
-                  p => p.row === r && p.col === c
-                )
-                const isActive =
-                  active.row === r && active.col === c
-      
-                  const isShaded = puzzle!.shaded?.[r]?.[c]
+            className="absolute rounded-full border border-neutral-600 pointer-events-none z-20"
+            style={{ inset: '2px' }}
+          />
+        )}
 
-                  const bg =
-                    cell === '#'
-                      ? 'bg-black'
-                      : isActive
-                      ? 'bg-red-300'
-                      : inWord
-                      ? 'bg-red-100'
-                      : isShaded
-                      ? 'bg-neutral-300'
-                      : 'bg-white'
-      
-                return (
-                  <div
-                    key={`${r}-${c}`}
-                    className={`relative aspect-square border border-neutral-400 ${bg}`}
-                  >
-                    {cell !== '#' && (
-  isMobile ? (
-    <div
-      onClick={() => {
-        setActive({ row: r, col: c })
-      }}
-      className="w-full h-full flex items-center justify-center text-2xl font-bold"
-    >
-      {userGrid[r][c]}
-    </div>
-  ) : (
-    <input
-      disabled={isComplete && !isReplayMode}
-      ref={el => {
-        inputs.current[r][c] = el
-      }}
-      value={userGrid[r][c]}
-      onChange={e =>
-        handleChange(r, c, e.target.value)
-      }
-      onKeyDown={e =>
-        handleKeyDown(e, r, c)
-      }
-      onFocus={() => {
-        setActive({ row: r, col: c })
-      }}
-      onClick={() => {
-        const isSameCell =
-          active.row === r && active.col === c
+        {forMobile ? (
+          <div
+            className="w-full h-full flex items-center justify-center font-bold select-none text-neutral-900 pointer-events-none"
+            style={{ fontSize: 'clamp(15px, 5.5vw, 26px)' }}
+          >
+            {userGrid[r][c]}
+          </div>
+        ) : (
+          <input
+            ref={el => { if (inputs.current[r]) inputs.current[r][c] = el }}
+            value={userGrid[r][c]}
+            onChange={e => handleChange(r, c, e.target.value)}
+            onKeyDown={e => handleKeyDown(e, r, c)}
+            onMouseDown={e => {
+              // Fires BEFORE focus so `active` still holds the previous cell.
+              // Prevent the browser's default focus so we can control it ourselves.
+              e.preventDefault()
+              handleCellTap(r, c)
+            }}
+            disabled={isComplete && !isReplayMode}
+            maxLength={1}
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            className="w-full h-full text-center font-bold uppercase outline-none bg-transparent text-neutral-900 cursor-default"
+            style={{ fontSize: 'clamp(13px, 2.8vw, 22px)' }}
+          />
+        )}
+      </div>
+    )
+  }
 
-        const { across, down } =
-          getAvailableDirections(r, c, puzzle!)
+  /* ─────────────────────────────────────────────────────────
+     Chicken splash
+  ───────────────────────────────────────────────────────── */
 
-        if (across && !down) {
-          setDirection('across')
-        } else if (!across && down) {
-          setDirection('down')
-        } else if (across && down) {
-          if (isSameCell) {
-            setDirection(d =>
-              d === 'across' ? 'down' : 'across'
-            )
-          }
-        }
+  if (showChickenSplash) {
+    return (
+      <div className="fixed inset-0 z-[90] overflow-hidden bg-white">
+        <Image
+          src="/chicken.png"
+          alt="Solved!"
+          fill
+          priority
+          className={`object-cover ${startWipe ? 'animate-wipe-out' : ''}`}
+        />
+      </div>
+    )
+  }
 
-        setActive({ row: r, col: c })
-      }}
-      maxLength={1}
-      className="w-full h-full text-center text-2xl md:text-xl font-bold tracking-wide uppercase outline-none bg-transparent"
-    />
-  )
-)}
-                  </div>
-                )
-              })
+  /* ─────────────────────────────────────────────────────────
+     Completion overlay
+  ───────────────────────────────────────────────────────── */
+
+  if (showCompletionOverlay) {
+    return (
+      <div className="fixed inset-0 bg-white z-[100] flex items-center justify-center p-6">
+        <div className="text-center space-y-6 max-w-sm w-full">
+          <img
+            src="/logo.png"
+            alt="Daily Malarkey"
+            className="w-14 h-14 mx-auto object-contain"
+          />
+          <div>
+            <div className="text-[11px] uppercase tracking-widest text-neutral-500 mb-1">
+              Daily Malarkey
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight">Puzzle Solved!</h1>
+          </div>
+
+          <div className="border border-neutral-200 rounded-2xl px-8 py-6 bg-neutral-50">
+            <div className="text-[11px] uppercase tracking-widest text-neutral-500 mb-2">
+              Your time
+            </div>
+            <div className="text-6xl font-mono font-light tabular-nums text-neutral-900">
+              {formatTime(seconds)}
+            </div>
+            {isReplayMode && (
+              <div className="text-xs text-neutral-400 mt-2">Replay — unranked</div>
             )}
           </div>
-        )
-      }
-      if (showChickenSplash) {
-        return (
-          <div className="fixed inset-0 z-[90] overflow-hidden">
-            <Image
-              src="/chicken.png"
-              alt="chicken"
-              fill
-              priority
-              className={`object-cover ${
-                startWipe ? 'animate-wipe-out' : ''
-              }`}
-            />
+
+          {puzzle.author && (
+            <p className="text-sm text-neutral-500">
+              Written by{' '}
+              <span className="font-semibold text-neutral-800">{puzzle.author}</span>
+            </p>
+          )}
+
+          <div className="space-y-3">
+            <button
+              onClick={() => router.push('/leaderboard')}
+              className="w-full bg-neutral-900 text-white py-3 rounded-xl text-sm uppercase tracking-widest hover:bg-black transition"
+            >
+              View Leaderboard
+            </button>
+            <button
+              onClick={handleReplay}
+              className="w-full border border-neutral-300 py-3 rounded-xl text-sm uppercase tracking-widest hover:bg-neutral-50 transition"
+            >
+              Play Again
+            </button>
           </div>
-        )
-      }
-      if (showCompletionOverlay) {
-        return (
-          <div className="fixed inset-0 bg-white z-[100] flex items-center justify-center p-6 text-center">
-            <div className="space-y-6">
-              <h1 className="text-2xl font-bold">
-                Puzzle Completed!
-              </h1>
-      
-              <div className="text-4xl font-mono">
-                {formatTime(seconds)}
-              </div>
-      
-              {puzzle?.author && (
-                <div className="text-sm text-neutral-600">
-                  Written by{" "}
-                  <span className="font-medium text-red-900">
-                    {puzzle.author}
-                  </span>
-                </div>
-              )}
-      
-              <div className="flex flex-col gap-4 mt-6">
-                <button
-                  onClick={() => router.push('/leaderboard')}
-                  className="bg-black text-white px-6 py-3 rounded-lg"
-                >
-                  View Leaderboard
-                </button>
-      
-                <button
-                  onClick={() => setShowCompletionOverlay(false)}
-                  className="border px-6 py-3 rounded-lg"
-                >
-                  Close
-                </button>
-              </div>
+        </div>
+      </div>
+    )
+  }
+
+  /* ─────────────────────────────────────────────────────────
+     MOBILE layout
+  ───────────────────────────────────────────────────────── */
+
+  if (isMobile) {
+    return (
+      <div
+        className="flex flex-col bg-white overflow-hidden"
+        style={{ height: '100dvh' }}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-2 border-b border-neutral-200 shrink-0">
+          <div>
+            <div className="text-[10px] uppercase tracking-widest text-neutral-500 leading-none">
+              Daily Malarkey
+            </div>
+            <h1 className="text-[17px] font-bold leading-tight">The Mini Malarkey</h1>
+          </div>
+          <div className="flex items-center gap-3">
+            {isComplete && !isReplayMode && (
+              <span className="text-[10px] text-emerald-700 font-bold uppercase tracking-wider">
+                ✓ Solved
+              </span>
+            )}
+            <span className="font-mono text-[17px] tabular-nums">{formatTime(seconds)}</span>
+            {isComplete && (
+              <button
+                onClick={handleReplay}
+                className="text-[11px] border border-neutral-300 px-2 py-1 rounded-lg text-neutral-600"
+              >
+                Replay
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Almost message */}
+        {almostMessage && (
+          <div className="px-4 py-1.5 shrink-0">
+            <div className="text-xs text-red-700 bg-red-50 border border-red-200 px-3 py-2 rounded-lg text-center font-medium">
+              {almostMessage}
             </div>
           </div>
-        )
-      }
-if (isMobile) {
-  return (
-    <div className="h-[100dvh] flex flex-col bg-white overflow-hidden">
+        )}
 
-      {/* Header */}
-<div className="px-4 pt-4 pb-2">
+        {/* Clue bar */}
+        <div className="flex items-center shrink-0 border-b border-neutral-200 bg-neutral-50"
+          style={{ minHeight: '52px' }}>
+          <button
+            onPointerDown={e => { e.preventDefault(); goToClueByIndex(activeClueIdx - 1) }}
+            className="px-3 py-2 text-neutral-500 text-2xl font-light select-none active:bg-neutral-200 transition shrink-0"
+            style={{ WebkitTapHighlightColor: 'transparent' }}
+          >
+            ‹
+          </button>
 
-<div className="flex justify-between items-center">
+          <div
+            className="flex-1 px-1 py-2 text-center select-none"
+            onPointerDown={e => {
+              e.preventDefault()
+              const { across, down } = getAvailableDirections(active.row, active.col, puzzle)
+              if (across && down) setDirection(d => d === 'across' ? 'down' : 'across')
+            }}
+            style={{ WebkitTapHighlightColor: 'transparent' }}
+          >
+            <div className="text-[10px] uppercase tracking-widest text-neutral-400 leading-none mb-0.5">
+              {activeClueNumber}. {direction}
+            </div>
+            <div className="text-[13px] font-semibold text-neutral-900 leading-snug"
+              style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+              {activeClueText}
+            </div>
+          </div>
 
-  <div>
-    <div className="text-xs uppercase tracking-wide text-neutral-500">
-      Daily Malarkey
-    </div>
+          <button
+            onPointerDown={e => { e.preventDefault(); goToClueByIndex(activeClueIdx + 1) }}
+            className="px-3 py-2 text-neutral-500 text-2xl font-light select-none active:bg-neutral-200 transition shrink-0"
+            style={{ WebkitTapHighlightColor: 'transparent' }}
+          >
+            ›
+          </button>
+        </div>
 
-    <h1 className="text-xl font-bold">
-      The Mini Malarkey
-    </h1>
-  </div>
+        {/* Grid */}
+        <div className="flex-1 flex items-center justify-center p-2 min-h-0">
+          <div
+            className="grid"
+            style={{
+              gridTemplateColumns: `repeat(${cols}, 1fr)`,
+              gap: '2px',
+              width: `min(calc(100vw - 1rem), calc(100dvh - 19rem))`,
+              aspectRatio: `${cols} / ${rows}`,
+            }}
+          >
+            {puzzle.grid.map((row, r) =>
+              row.map((_, c) => renderCell(r, c, true))
+            )}
+          </div>
+        </div>
 
-  <div className="flex items-center gap-4">
-    <div className="font-mono text-lg">
-      {formatTime(seconds)}
-    </div>
-
-    {isComplete && (
-      <button
-        onClick={handleReplay}
-        className="text-sm border px-3 py-1 rounded-md"
-      >
-        Replay
-      </button>
-    )}
-  </div>
-
-</div>
-</div>
-{almostMessage && (
-  <div className="px-4 mt-2">
-    <div className="text-xs text-red-700 bg-red-50 border border-red-200 px-3 py-2 rounded-md text-center">
-      Almost there — something isn’t quite right.
-    </div>
-  </div>
-)}
-      {/* Grid */}
-      <div className="flex-1 flex items-center justify-center px-4">
+        {/* Virtual keyboard */}
         <div
-          className="grid gap-1 w-full max-w-[92vw]"
-          style={{
-            gridTemplateColumns: `repeat(${cols}, 1fr)`
-          }}
+          className="shrink-0 bg-[#aab4bd] pt-[6px] pb-[6px] px-[3px]"
+          style={{ paddingBottom: 'max(6px, env(safe-area-inset-bottom))' }}
         >
-          {puzzle.grid.map((row, r) =>
-            row.map((cell, c) => {
-              const inWord = activeWord.some(
-                p => p.row === r && p.col === c
-              )
+          {/* Row 1: QWERTYUIOP */}
+          <div className="flex gap-[4px] mb-[5px]">
+            {'QWERTYUIOP'.split('').map(k => (
+              <button
+                key={k}
+                onPointerDown={e => { e.preventDefault(); handleMobileKey(k) }}
+                className="flex-1 bg-white rounded-[6px] font-medium text-neutral-900 select-none"
+                style={{
+                  height: '43px',
+                  fontSize: '16px',
+                  boxShadow: '0 1px 0 1px #717d85',
+                  WebkitTapHighlightColor: 'transparent',
+                }}
+              >
+                {k}
+              </button>
+            ))}
+          </div>
 
-              const isActive =
-                active.row === r && active.col === c
-                const isShaded = puzzle!.shaded?.[r]?.[c]
-              
-const bg =
-cell === '#'
-  ? 'bg-black'
-  : isActive
-  ? 'bg-red-300'
-  : inWord
-  ? 'bg-red-100'
-  : isShaded
-  ? 'bg-neutral-300'
-  : 'bg-white'
+          {/* Row 2: ASDFGHJKL */}
+          <div className="flex gap-[4px] mb-[5px] px-[5%]">
+            {'ASDFGHJKL'.split('').map(k => (
+              <button
+                key={k}
+                onPointerDown={e => { e.preventDefault(); handleMobileKey(k) }}
+                className="flex-1 bg-white rounded-[6px] font-medium text-neutral-900 select-none"
+                style={{
+                  height: '43px',
+                  fontSize: '16px',
+                  boxShadow: '0 1px 0 1px #717d85',
+                  WebkitTapHighlightColor: 'transparent',
+                }}
+              >
+                {k}
+              </button>
+            ))}
+          </div>
 
-              return (
-                <div
-                  key={`${r}-${c}`}
-                  onClick={() => {
-                    const { across, down } =
-                      getAvailableDirections(r, c, puzzle)
+          {/* Row 3: ZXCVBNM + ⌫ */}
+          <div className="flex gap-[4px] px-[2%]">
+            {'ZXCVBNM'.split('').map(k => (
+              <button
+                key={k}
+                onPointerDown={e => { e.preventDefault(); handleMobileKey(k) }}
+                className="flex-1 bg-white rounded-[6px] font-medium text-neutral-900 select-none"
+                style={{
+                  height: '43px',
+                  fontSize: '16px',
+                  boxShadow: '0 1px 0 1px #717d85',
+                  WebkitTapHighlightColor: 'transparent',
+                }}
+              >
+                {k}
+              </button>
+            ))}
+            <button
+              onPointerDown={e => { e.preventDefault(); handleMobileBackspace() }}
+              className="bg-[#8e979e] rounded-[6px] text-neutral-800 select-none flex items-center justify-center"
+              style={{
+                height: '43px',
+                minWidth: '44px',
+                width: '44px',
+                fontSize: '19px',
+                boxShadow: '0 1px 0 1px #717d85',
+                WebkitTapHighlightColor: 'transparent',
+              }}
+              aria-label="Backspace"
+            >
+              ⌫
+            </button>
+          </div>
+        </div>
 
-                    if (across && !down) {
-                      setDirection('across')
-                    } else if (!across && down) {
-                      setDirection('down')
-                    }
+      </div>
+    )
+  }
 
-                    setActive({ row: r, col: c })
-                  }}
-                  className={`aspect-square border border-neutral-400 ${bg} flex items-center justify-center text-2xl font-bold`}
-                >
-                  {cell !== '#' && userGrid[r][c]}
-                </div>
-              )
-            })
+  /* ─────────────────────────────────────────────────────────
+     DESKTOP layout
+  ───────────────────────────────────────────────────────── */
+
+  return (
+    <main className="h-screen flex flex-col bg-white overflow-hidden">
+
+      {/* Top bar */}
+      <div className="flex items-center justify-between px-8 py-3 border-b border-neutral-200 shrink-0">
+        <div className="flex items-center gap-4">
+          <img src="/logo.png" alt="Daily Malarkey" className="w-10 h-10 object-contain" />
+          <div>
+            <div className="text-[11px] uppercase tracking-[0.2em] text-neutral-500">
+              Daily Malarkey
+            </div>
+            <h1 className="text-xl font-bold tracking-tight">The Mini Malarkey</h1>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-6">
+          {user && username && (
+            <span className="text-sm text-neutral-500">
+              Welcome,{' '}
+              <span className="font-semibold text-neutral-800">{username}</span>
+            </span>
+          )}
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] uppercase tracking-widest text-neutral-400">Time</span>
+            <span className="font-mono text-xl tabular-nums">{formatTime(seconds)}</span>
+          </div>
+          {isComplete && !isReplayMode && (
+            <span className="text-xs text-emerald-700 font-bold uppercase tracking-wider">
+              ✓ Solved
+            </span>
+          )}
+          {isReplayMode && (
+            <span className="text-xs text-neutral-500 uppercase tracking-wider">Replay</span>
+          )}
+          {isComplete && (
+            <button
+              onClick={handleReplay}
+              className="flex items-center gap-1.5 border border-neutral-300 px-3 py-1.5 text-sm rounded-lg hover:bg-neutral-50 transition"
+            >
+              <RotateCcw size={13} />
+              Replay
+            </button>
           )}
         </div>
       </div>
 
-      {/* Clue Bar */}
-<div className="px-4 py-3 border-t border-b flex items-center bg-neutral-50">
+      {/* Body */}
+      <div className="flex flex-1 overflow-hidden">
 
-{/* Previous Clue */}
-<button
-  onClick={() =>
-    goToClueByIndex(activeClueIndex - 1)
-  }
-  className="text-xl px-3"
->
-  ‹
-</button>
+        {/* Puzzle centre */}
+        <div className="flex-1 flex items-center justify-center p-8 overflow-hidden">
+          <div className="flex flex-col items-center gap-4 w-full max-w-[480px]">
 
-{/* Clue Content (FULL BAR TOGGLES) */}
-<div
-  onClick={() =>
-    setDirection(d =>
-      d === 'across' ? 'down' : 'across'
-    )
-  }
-  className="flex-1 text-center cursor-pointer"
->
-  <div className="text-xs uppercase tracking-wide text-neutral-500">
-    {direction}
-  </div>
+            {almostMessage && (
+              <div className="w-full border border-red-200 bg-red-50 px-4 py-3 rounded-xl text-sm text-red-800">
+                <span className="font-bold uppercase tracking-wide">Almost. </span>
+                {almostMessage}
+              </div>
+            )}
 
-  <div className="font-medium">
-    {activeClueNumber}. {activeClueText}
-  </div>
-</div>
+            <div
+              className="grid w-full"
+              style={{ gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: '2px' }}
+            >
+              {puzzle.grid.map((row, r) =>
+                row.map((_, c) => renderCell(r, c, false))
+              )}
+            </div>
 
-{/* Next Clue */}
-<button
-  onClick={() =>
-    goToClueByIndex(activeClueIndex + 1)
-  }
-  className="text-xl px-3"
->
-  ›
-</button>
+          </div>
+        </div>
 
-</div>
+        {/* Clue sidebar */}
+        <aside className="w-72 shrink-0 border-l border-neutral-200 overflow-y-auto py-6 px-5">
 
+          <div className="mb-8">
+            <h2 className="text-[11px] uppercase tracking-widest font-bold text-neutral-500 mb-3 pb-2 border-b border-neutral-200">
+              Across
+            </h2>
+            {acrossClues.map(({ num, clue }) => {
+              const isAct = direction === 'across' && activeClueNumber === num
+              return (
+                <div
+                  key={num}
+                  onClick={() => { setDirection('across'); setActive(findStart(num, numbers)) }}
+                  className={`flex gap-2 px-2 py-1.5 rounded-lg cursor-pointer text-sm mb-0.5 leading-snug transition-colors ${
+                    isAct
+                      ? 'bg-red-100 text-red-900 font-semibold'
+                      : 'text-neutral-700 hover:bg-neutral-100'
+                  }`}
+                >
+                  <span className="shrink-0 font-semibold text-neutral-400 w-5 text-right tabular-nums">
+                    {num}.
+                  </span>
+                  <span>{clue}</span>
+                </div>
+              )
+            })}
+          </div>
 
-{/* Keyboard */}
-<div className="bg-neutral-200 px-4 py-3 shrink-0">
+          <div>
+            <h2 className="text-[11px] uppercase tracking-widest font-bold text-neutral-500 mb-3 pb-2 border-b border-neutral-200">
+              Down
+            </h2>
+            {downClues.map(({ num, clue }) => {
+              const isAct = direction === 'down' && activeClueNumber === num
+              return (
+                <div
+                  key={num}
+                  onClick={() => { setDirection('down'); setActive(findStart(num, numbers)) }}
+                  className={`flex gap-2 px-2 py-1.5 rounded-lg cursor-pointer text-sm mb-0.5 leading-snug transition-colors ${
+                    isAct
+                      ? 'bg-red-100 text-red-900 font-semibold'
+                      : 'text-neutral-700 hover:bg-neutral-100'
+                  }`}
+                >
+                  <span className="shrink-0 font-semibold text-neutral-400 w-5 text-right tabular-nums">
+                    {num}.
+                  </span>
+                  <span>{clue}</span>
+                </div>
+              )
+            })}
+          </div>
 
-  {/* Row 1 */}
-  <div
-    className="grid gap-1 mb-2"
-    style={{ gridTemplateColumns: "repeat(10, 1fr)" }}
-  >
-    {"QWERTYUIOP".split("").map(letter => (
-      <button
-        key={letter}
-        onClick={() => handleMobileKey(letter)}
-        className="bg-white h-14 rounded-lg text-lg font-medium active:scale-95 active:bg-neutral-300 transition duration-75 select-none"
-      >
-        {letter}
-      </button>
-    ))}
-  </div>
-
-  {/* Row 2 */}
-  <div
-    className="grid gap-1 mb-2"
-    style={{ gridTemplateColumns: "repeat(9, 1fr)" }}
-  >
-    {"ASDFGHJKL".split("").map(letter => (
-      <button
-        key={letter}
-        onClick={() => handleMobileKey(letter)}
-        className="bg-white h-14 rounded-lg text-lg font-medium active:scale-95 active:bg-neutral-300 transition duration-75 select-none"
-      >
-        {letter}
-      </button>
-    ))}
-  </div>
-
-  {/* Row 3 + Backspace */}
-  <div
-    className="grid gap-1"
-    style={{ gridTemplateColumns: "repeat(7, 1fr) auto" }}
-  >
-    {"ZXCVBNM".split("").map(letter => (
-      <button
-        key={letter}
-        onClick={() => handleMobileKey(letter)}
-        className="bg-white h-14 rounded-lg text-lg font-medium active:scale-95 active:bg-neutral-300 transition duration-75 select-none"
-      >
-        {letter}
-      </button>
-    ))}
-
-    <button
-      onClick={handleMobileBackspace}
-      className="bg-neutral-400 h-14 px-4 rounded-lg text-lg active:scale-95 active:bg-neutral-500 transition duration-75"
-    >
-      ⌫
-    </button>
-  </div>
-</div>
-
-{isComplete && (
-  <div className="px-4 pb-3">
-    <button
-      onClick={() => router.push('/leaderboard')}
-      className="w-full bg-black text-white py-3 rounded-lg"
-    >
-      View Leaderboard
-    </button>
-  </div>
-)}
-    </div>
-  )
-}
-
-  return (
-    <main className="h-screen md:min-h-screen flex flex-col md:flex-row bg-white overflow-hidden">
-      <section className="w-full flex flex-col items-center md:items-start px-4 md:px-0 pt-4 md:pt-0 flex-1 md:pb-0 overflow-hidden">
-      <div className="w-full md:max-w-4xl md:mx-auto">
-      <div className="flex justify-between items-start mb-4 md:mb-10">
-
-
-{/* Left side */}
-<div className="flex items-center gap-4">
-  <img
-    src="/logo.png"
-    alt="Daily Malarkey"
-    className="w-12 h-12 object-contain"
-  />
-
-  <div>
-    <div className="text-sm tracking-[0.2em] uppercase text-neutral-500">
-      Daily Malarkey
-    </div>
-    <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-      The Mini Malarkey
-    </h1>
-  </div>
-</div>
-{/* Right side controls */}
-<div className="flex items-center gap-8">
-
-
-{isComplete && (
-  <button
-    onClick={handleReplay}
-    className="flex items-center gap-2 border px-4 py-2 text-sm rounded-md hover:bg-neutral-100 transition ml-8"
-  >
-    <RotateCcw size={16} />
-    Replay
-  </button>
-)}
-
-</div>
-
+        </aside>
       </div>
-        
-      <div className="mb-4 md:mb-6 flex items-baseline gap-3">
-  <span className="uppercase text-xs tracking-widest text-neutral-500">
-    Time
-  </span>
-  <span className="font-mono text-2xl">
-    {formatTime(seconds)}
-  </span>
-</div>
 
-        {isComplete && !isReplayMode && (
-        <div className="mb-3 text-red-800 font-semibold tracking-wide uppercase text-sm">
-        Official Solve
-        </div>
-      )}
-
-        {isReplayMode && (
-        <div className="mb-2 text-gray-500 font-semibold">
-        Replay Mode (Unranked)
-        </div>
-      )}
-
-{almostMessage && (
-  <div className="mt-6 mb-4 border border-neutral-300 bg-neutral-50 px-5 py-4 text-sm text-neutral-700">
-    <div className="font-semibold tracking-wide uppercase text-red-900 mb-1">
-      Almost
-    </div>
-    <div>
-      Almost got it! Something isn’t quite right..
-    </div>
-  </div>
-)}
-        <div className="mb-2 text-gray-600 font-medium">
-        {user && username && (
-  <div className="text-neutral-700">
-    Welcome back <span className="font-semibold">{username}</span>.
-  </div>
-)}
-        </div>
-
-
-        <div className="flex-1 flex items-center justify-center w-full overflow-hidden">
-  {renderGrid()}
-</div>
-</div>
-      </section>
-
-      <aside className="hidden md:block w-80">
-      <h2 className="text-lg font-bold uppercase tracking-wider mb-4 text-neutral-900">
-  Across
-</h2>
-        {Object.entries(puzzle.clues.across).map(
-          ([num, clue]) => {
-            const start = findStart(Number(num), numbers)
-            const isActive =
-              direction === 'across' &&
-              activeClueNumber === Number(num)
-              
-
-            return (
-              <div
-                key={num}
-                className={`mb-2 cursor-pointer px-2 py-1 rounded ${
-                  isActive
-                    ? 'bg-red-100 text-red-900 font-semibold'
-                    : 'text-neutral-700'
-                }`}
-                onClick={() => {
-                  if (
-                    activeClueNumber === Number(num) &&
-                    direction === 'across'
-                  ) {
-                    setDirection('down')
-                  } else {
-                    setDirection('across')
-                    setActive(start)
-                  }
-                }}
-              >
-                {num}. {clue}
-              </div>
-            )
-          }
-        )}
-
-        <h2 className="text-xl font-bold mt-6 mb-2">
-          Down
-        </h2>
-        {Object.entries(puzzle.clues.down).map(
-          ([num, clue]) => {
-            const start = findStart(Number(num), numbers)
-            const isActive =
-              direction === 'down' &&
-              activeClueNumber === Number(num)
-
-            return (
-              <div
-                key={num}
-                className={`mb-2 cursor-pointer ${
-                  isActive ? 'font-bold underline' : ''
-                }`}
-                onClick={() => {
-                  if (
-                    activeClueNumber === Number(num) &&
-                    direction === 'down'
-                  ) {
-                    setDirection('across')
-                  } else {
-                    setDirection('down')
-                    setActive(start)
-                  }
-                }}
-              >
-                {num}. {clue}
-              </div>
-            )
-          }
-        )}
-      </aside>
-      {/* MOBILE FIXED CLUE BAR */}
-      
-      
-
-
-{/* Floating Leaderboard Button */}
-<div className="hidden md:block fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
-  <button
-    onClick={() => router.push('/leaderboard')}
-    className="border border-neutral-900 px-6 py-3 text-sm uppercase tracking-wide hover:bg-neutral-100"
-  >
-    View Leaderboard
-  </button>
-</div>
+      {/* Leaderboard button */}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
+        <button
+          onClick={() => router.push('/leaderboard')}
+          className="border border-neutral-300 bg-white/95 backdrop-blur-sm px-6 py-2 text-xs uppercase tracking-widest hover:bg-neutral-50 rounded-full shadow-sm transition"
+        >
+          Leaderboard
+        </button>
+      </div>
 
     </main>
   )
-}
-
-/* ================= UTIL ================= */
-function getAvailableDirections(
-  row: number,
-  col: number,
-  puzzle: Puzzle
-): { across: boolean; down: boolean } {
-  const rows = puzzle.grid.length
-  const cols = puzzle.grid[0].length
-
-  const isBlack = (r: number, c: number) =>
-    r < 0 ||
-    c < 0 ||
-    r >= rows ||
-    c >= cols ||
-    puzzle.grid[r][c] === '#'
-
-  const canAcross =
-    !isBlack(row, col - 1) || !isBlack(row, col + 1)
-
-  const canDown =
-    !isBlack(row - 1, col) || !isBlack(row + 1, col)
-
-  return {
-    across: canAcross,
-    down: canDown
-  }
-}
-function generateNumbers(grid: string[][]): NumberedCell[][] {
-  let count = 1
-
-  return grid.map((row, r) =>
-    row.map((cell, c) => {
-      if (cell === '#') return {} as NumberedCell
-
-      const rightExists = c + 1 < grid[0].length
-      const belowExists = r + 1 < grid.length
-
-      const startsAcross =
-        (c === 0 || row[c - 1] === '#') &&
-        rightExists &&
-        row[c + 1] !== '#'
-
-      const startsDown =
-        (r === 0 || grid[r - 1][c] === '#') &&
-        belowExists &&
-        grid[r + 1][c] !== '#'
-
-      return {
-        number:
-          startsAcross || startsDown
-            ? count++
-            : undefined,
-        startsAcross,
-        startsDown
-      }
-    })
-  )
-}
-
-function findStart(
-  num: number,
-  numbers: NumberedCell[][]
-) {
-  for (let r = 0; r < numbers.length; r++) {
-    for (let c = 0; c < numbers[r].length; c++) {
-      if (numbers[r][c].number === num)
-        return { row: r, col: c }
-    }
-  }
-  return { row: 0, col: 0 }
 }
