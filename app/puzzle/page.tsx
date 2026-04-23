@@ -783,44 +783,6 @@ export default function PuzzlePage() {
           </div>
         )}
 
-        {/* Clue bar */}
-        <div className="flex items-center shrink-0 border-b border-neutral-200 bg-neutral-50"
-          style={{ minHeight: '52px' }}>
-          <button
-            onPointerDown={e => { e.preventDefault(); goToClueByIndex(activeClueIdx - 1) }}
-            className="px-3 py-2 text-neutral-500 text-2xl font-light select-none active:bg-neutral-200 transition shrink-0"
-            style={{ WebkitTapHighlightColor: 'transparent' }}
-          >
-            ‹
-          </button>
-
-          <div
-            className="flex-1 px-1 py-2 text-center select-none"
-            onPointerDown={e => {
-              e.preventDefault()
-              const { across, down } = getAvailableDirections(active.row, active.col, puzzle)
-              if (across && down) setDirection(d => d === 'across' ? 'down' : 'across')
-            }}
-            style={{ WebkitTapHighlightColor: 'transparent' }}
-          >
-            <div className="text-[10px] uppercase tracking-widest text-neutral-400 leading-none mb-0.5">
-              {activeClueNumber}. {direction}
-            </div>
-            <div className="text-[13px] font-semibold text-neutral-900 leading-snug"
-              style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-              {activeClueText}
-            </div>
-          </div>
-
-          <button
-            onPointerDown={e => { e.preventDefault(); goToClueByIndex(activeClueIdx + 1) }}
-            className="px-3 py-2 text-neutral-500 text-2xl font-light select-none active:bg-neutral-200 transition shrink-0"
-            style={{ WebkitTapHighlightColor: 'transparent' }}
-          >
-            ›
-          </button>
-        </div>
-
         {/* Grid */}
         <div className="flex-1 flex items-center justify-center p-2 min-h-0">
           <div
@@ -836,6 +798,41 @@ export default function PuzzlePage() {
               row.map((_, c) => renderCell(r, c, true))
             )}
           </div>
+        </div>
+
+        {/* Clue bar — sits directly above keyboard (NYT style) */}
+        <div className="flex items-center shrink-0 border-t border-b border-neutral-200 bg-[#c9e3fa]"
+          style={{ minHeight: '56px' }}>
+          <button
+            onPointerDown={e => { e.preventDefault(); goToClueByIndex(activeClueIdx - 1) }}
+            className="px-3 py-2 text-neutral-700 text-2xl font-light select-none active:bg-[#a9d0ee] transition shrink-0"
+            style={{ WebkitTapHighlightColor: 'transparent' }}
+          >
+            ‹
+          </button>
+
+          <div
+            className="flex-1 px-1 py-2 text-center select-none"
+            onPointerDown={e => {
+              e.preventDefault()
+              const { across, down } = getAvailableDirections(active.row, active.col, puzzle)
+              if (across && down) setDirection(d => d === 'across' ? 'down' : 'across')
+            }}
+            style={{ WebkitTapHighlightColor: 'transparent' }}
+          >
+            <div className="text-[14px] font-semibold text-neutral-900 leading-snug"
+              style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+              {activeClueText}
+            </div>
+          </div>
+
+          <button
+            onPointerDown={e => { e.preventDefault(); goToClueByIndex(activeClueIdx + 1) }}
+            className="px-3 py-2 text-neutral-700 text-2xl font-light select-none active:bg-[#a9d0ee] transition shrink-0"
+            style={{ WebkitTapHighlightColor: 'transparent' }}
+          >
+            ›
+          </button>
         </div>
 
         {/* Virtual keyboard */}
