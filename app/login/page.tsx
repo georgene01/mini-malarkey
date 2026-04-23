@@ -19,6 +19,25 @@ export default function LoginPage() {
     else alert(error.message)
   }
 
+  async function handleForgotPassword() {
+    const target = email.trim().toLowerCase()
+    if (!target) {
+      alert('Enter your email above first, then tap "Forgot password".')
+      return
+    }
+
+    const { error } = await supabase.auth.resetPasswordForEmail(target, {
+      redirectTo: `${window.location.origin}/reset-password`
+    })
+
+    if (error) {
+      alert(error.message)
+      return
+    }
+
+    alert('If an account exists for that email, a reset link is on its way. Check your inbox (and spam).')
+  }
+
   async function handleSignup() {
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -95,7 +114,16 @@ export default function LoginPage() {
   
         </div>
   
-        <div className="text-center pt-4">
+        <div className="text-center pt-2">
+          <button
+            onClick={handleForgotPassword}
+            className="text-sm text-neutral-600 hover:text-red-800 transition"
+          >
+            Forgot password?
+          </button>
+        </div>
+
+        <div className="text-center pt-2">
         <button
   onClick={() => router.push('/puzzle')}
             className="text-sm text-neutral-600 hover:text-red-800 transition"
